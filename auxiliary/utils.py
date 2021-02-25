@@ -102,3 +102,10 @@ def hwc_chw(img: np.ndarray) -> np.ndarray:
 
 def gamma_correct(img: np.ndarray, gamma: float = 2.2) -> np.ndarray:
     return np.power(img, (1.0 / gamma))
+
+
+def scale(x: torch.Tensor) -> torch.Tensor:
+    """ Scales all values of a tensor between 0 and 1 """
+    x = x - x.min()
+    x = x - x.max()
+    return x

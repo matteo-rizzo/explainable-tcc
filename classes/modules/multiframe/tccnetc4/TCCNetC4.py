@@ -3,17 +3,13 @@ from torch import nn
 from torch.nn.functional import normalize
 
 from auxiliary.settings import DEVICE
-from auxiliary.utils import scale
 from classes.modules.common.conv_lstm.ConvLSTMCell import ConvLSTMCell
-from multiframe.attention_tccnet.submodules.FC4 import FC4
+from classes.modules.multiframe.tccnetc4.submodules.C4 import C4
 
-"""
-TCCNet presented in 'A Benchmark for Temporal Color Constancy' <https://arxiv.org/abs/2003.03763>
-Refer to <https://github.com/yanlinqian/Temporal-Color-Constancy> for the original implementation
-"""
+""" TemporalColorConstancy-Net presented in https://arxiv.org/abs/2003.03763, 'A Benchmark for Temporal Color Constancy' """
 
 
-class AttentionTCCNet(nn.Module):
+class TCCNetC4(nn.Module):
 
     def __init__(self, hidden_size: int = 128, kernel_size: int = 5):
         super().__init__()
@@ -21,12 +17,12 @@ class AttentionTCCNet(nn.Module):
         self.device = DEVICE
         self.hidden_size = hidden_size
 
-        self.fc4_A = FC4()
-        self.fc4_B = FC4()
+        self.c4_A, self.c4_B = C4(), C4()
 
-        self.lstm_A = ConvLSTMCell(3, self.hidden_size, kernel_size)
-        self.lstm_B = ConvLSTMCell(3, self.hidden_size, kernel_size)
+        self.lstm_A = ConvLSTMCell(512, self.hidden_size, kernel_size)
+        self.lstm_B = ConvLSTMCell(512, self.hidden_size, kernel_size)
 
+        # Hidden size is halved with respect to training
         self.fc = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
             nn.Conv2d(self.hidden_size * 2, self.hidden_size // 2, kernel_size=6, stride=1, padding=3),
@@ -50,27 +46,26 @@ class AttentionTCCNet(nn.Module):
         batch_size, time_steps, num_channels, h, w = a.shape
 
         a = a.view(batch_size * time_steps, num_channels, h, w)
+        a = self.c4_A(a)
+        _, num_channels_a, h_a, w_a = a.shape
+        a = a.view(batch_size, time_steps, num_channels_a, h_a, w_a)
+
         b = b.view(batch_size * time_steps, num_channels, h, w)
+        b = self.c4_B(b)
+        _, num_channels_b, h_b, w_b = b.shape
+        b = b.view(batch_size, time_steps, num_channels_b, h_b, w_b)
 
-        _, rgb_a, confidence_a = self.fc4_A(a)
-        _, rgb_b, confidence_b = self.fc4_B(b)
-
-        weighted_est_a = scale(rgb_a * confidence_a).clone()
-        weighted_est_b = scale(rgb_b * confidence_b).clone()
-
-        _, _, h_a, w_a = weighted_est_a.shape
         self.lstm_A.init_hidden(self.hidden_size, (h_a, w_a))
-        hidden_1, cell_1 = self.__init_hidden(batch_size, h_a, w_a)
+        hidden_state_1, cell_state_1 = self.__init_hidden(batch_size, h_a, w_a)
 
-        _, _, h_b, w_b = weighted_est_b.shape
         self.lstm_B.init_hidden(self.hidden_size, (h_b, w_b))
-        hidden_2, cell_2 = self.__init_hidden(batch_size, h_b, w_b)
+        hidden_state_2, cell_state_2 = self.__init_hidden(batch_size, h_b, w_b)
 
-        for t in range(time_steps):
-            hidden_1, cell_1 = self.lstm_A(weighted_est_a[t, :, :, :].unsqueeze(0), hidden_1, cell_1)
-            hidden_2, cell_2 = self.lstm_B(weighted_est_b[t, :, :, :].unsqueeze(0), hidden_2, cell_2)
+        for t in range(a.shape[1]):
+            hidden_state_1, cell_state_1 = self.lstm_A(a[:, t, :], hidden_state_1, cell_state_1)
+            hidden_state_2, cell_state_2 = self.lstm_B(b[:, t, :], hidden_state_2, cell_state_2)
 
-        c = torch.cat((hidden_1, hidden_2), 1)
+        c = torch.cat((hidden_state_1, hidden_state_2), 1)
         c = self.fc(c)
 
-        return normalize(torch.sum(torch.sum(c, 2), 2), dim=1)
+        return normalize(c if len(c.shape) == 2 else torch.sum(torch.sum(c, 2), 2), dim=1)
