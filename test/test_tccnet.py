@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 
 from auxiliary.settings import DEVICE
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.modules.multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
 from classes.modules.multiframe.tccnet.ModelTCCNet import ModelTCCNet
 from classes.modules.multiframe.tccnetc4.ModelTCCNetC4 import ModelTCCNetC4
 from classes.training.Evaluator import Evaluator
@@ -22,7 +23,7 @@ MODEL_TYPE = "tccnet"
 DATA_FOLDER = "tcc_split"
 PATH_TO_PTH = os.path.join("trained_models", "full_seq", MODEL_TYPE, DATA_FOLDER, "model.pth")
 
-MODELS = {"tccnet": ModelTCCNet, "tccnetc4": ModelTCCNetC4}
+MODELS = {"tccnet": ModelTCCNet, "tccnetc4": ModelTCCNetC4, "attention_tccnet": ModelAttentionTCCNet}
 
 
 def main():
@@ -48,8 +49,7 @@ def main():
     inference_times = []
 
     with torch.no_grad():
-        for i, data in enumerate(test_loader):
-            seq, mimic, label, file_name = data
+        for i, (seq, mimic, label, file_name) in enumerate(test_loader):
             seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
 
             tic = time.perf_counter()

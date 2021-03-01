@@ -1,9 +1,11 @@
+from typing import Tuple
+
 import torch
 from torch import nn
 
 from auxiliary.settings import DEVICE
 from classes.modules.common.squeezenet.SqueezeNetLoader import SqueezeNetLoader
-from classes.modules.singleframe.fc4.FC4 import FC4
+from classes.modules.multiframe.tccnetc4.submodules.FC4 import FC4
 
 
 class C4(torch.nn.Module):
@@ -26,7 +28,7 @@ class C4(torch.nn.Module):
         normalized_frames = torch.div(corrected_frames, max_img.unsqueeze(1).unsqueeze(1).unsqueeze(1) + 1e-10)
         return normalized_frames
 
-    def forward(self, x: torch.Tensor) -> tuple:
+    def forward(self, x: torch.Tensor) -> Tuple:
         """ x has shape [bs, 3, h, w] """
 
         o1 = self.submodel1(x)

@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader
 from auxiliary.settings import DEVICE
 from auxiliary.utils import log_experiment, log_metrics, print_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.modules.multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
-from multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
 
 MODEL_TYPE = "tccnet"
 DATA_FOLDER = "tcc_split"

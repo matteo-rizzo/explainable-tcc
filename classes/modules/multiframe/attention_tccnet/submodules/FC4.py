@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.nn.functional import normalize
 
-from common.squeezenet.SqueezeNetLoader import SqueezeNetLoader
+from classes.modules.common.squeezenet.SqueezeNetLoader import SqueezeNetLoader
 
 """
 FC4: Fully Convolutional Color Constancy with Confidence-weighted Pooling

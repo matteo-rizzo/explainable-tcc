@@ -1,11 +1,13 @@
+from typing import Tuple
+
 import torch
-from torch import nn
+from torch import nn, Tensor
 from torch.nn.functional import normalize
 
 from auxiliary.settings import DEVICE
 from auxiliary.utils import scale
 from classes.modules.common.conv_lstm.ConvLSTMCell import ConvLSTMCell
-from multiframe.attention_tccnet.submodules.FC4 import FC4
+from classes.modules.multiframe.attention_tccnet.submodules.FC4 import FC4
 
 """
 TCCNet presented in 'A Benchmark for Temporal Color Constancy' <https://arxiv.org/abs/2003.03763>
@@ -35,12 +37,12 @@ class AttentionTCCNet(nn.Module):
             nn.Sigmoid()
         )
 
-    def __init_hidden(self, batch_size: int, h: int, w: int) -> tuple:
+    def __init_hidden(self, batch_size: int, h: int, w: int) -> Tuple:
         hidden_state = torch.zeros((batch_size, self.hidden_size, h, w)).to(self.device)
         cell_state = torch.zeros((batch_size, self.hidden_size, h, w)).to(self.device)
         return hidden_state, cell_state
 
-    def forward(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    def forward(self, a: torch.Tensor, b: torch.Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """
         @param a: the sequences of frames of shape "bs x ts x nc x h x w"
         @param b: the mimic sequences of shape "bs x ts x nc x h x w"
@@ -73,4 +75,6 @@ class AttentionTCCNet(nn.Module):
         c = torch.cat((hidden_1, hidden_2), 1)
         c = self.fc(c)
 
-        return normalize(torch.sum(torch.sum(c, 2), 2), dim=1)
+        pred = normalize(torch.sum(torch.sum(c, 2), 2), dim=1)
+
+        return pred, rgb_a, confidence_a

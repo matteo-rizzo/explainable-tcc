@@ -78,8 +78,6 @@ def main():
 
         for epoch in range(EPOCHS):
 
-            # --- Training ---
-
             model.train_mode()
             train_l1.reset()
             train_l2.reset()
@@ -87,15 +85,9 @@ def main():
             train_mal.reset()
             start = time.time()
 
-            for i, data in enumerate(train_loader):
-
+            for i, (sequence, mimic, label, file_name) in enumerate(train_loader):
                 model.reset_gradient()
-
-                sequence, mimic, label, file_name = data
-                sequence = sequence.unsqueeze(1).to(DEVICE) if len(sequence.shape) == 4 else sequence.to(DEVICE)
-                mimic = mimic.to(DEVICE)
-                label = label.to(DEVICE)
-
+                sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
                 o1, o2, o3 = model.predict(sequence, mimic)
                 l1, l2, l3, mal = model.compute_loss([o1, o2, o3], label)
                 mal.backward()
@@ -114,14 +106,11 @@ def main():
             train_time = time.time() - start
             log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
 
-            # --- Validation ---
-
-            start = time.time()
-
             val_l1.reset()
             val_l2.reset()
             val_l3.reset()
             val_mal.reset()
+            start = time.time()
 
             if epoch % 5 == 0:
 
@@ -134,13 +123,8 @@ def main():
                     model.evaluation_mode()
                     evaluator.reset_errors()
 
-                    for i, data in enumerate(test_loader):
-
-                        sequence, mimic, label, file_name = data
-                        sequence = sequence.unsqueeze(1).to(DEVICE) if len(sequence.shape) == 4 else sequence.to(DEVICE)
-                        mimic = mimic.to(DEVICE)
-                        label = label.to(DEVICE)
-
+                    for i, (sequence, mimic, label, file_name) in enumerate(test_loader):
+                        sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
                         o1, o2, o3 = model.predict(sequence, mimic)
                         l1, l2, l3, mal = model.compute_loss([o1, o2, o3], label)
                         val_l1.update(l1.item())

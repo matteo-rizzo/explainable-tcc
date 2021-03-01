@@ -12,7 +12,7 @@ from classes.modules.multiframe.tccnetc4.ModelTCCNetC4 import ModelTCCNetC4
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
 
-MODEL_TYPE = "tccnetc4"
+MODEL_TYPE = "tccnet"
 NUM_FOLDS = 3
 EPOCHS = 50
 BATCH_SIZE = 16
@@ -71,26 +71,16 @@ def main():
 
         for epoch in range(EPOCHS):
 
-            # --- Training ---
-
             model.train_mode()
             train_loss.reset()
             start = time.time()
 
-            for i, data in enumerate(train_loader):
-
+            for i, (sequence, mimic, label) in enumerate(train_loader):
                 model.reset_gradient()
-
-                sequence, mimic, label, file_name = data
-                sequence = sequence.unsqueeze(1).to(DEVICE) if len(sequence.shape) == 4 else sequence.to(DEVICE)
-                mimic = mimic.to(DEVICE)
-                label = label.to(DEVICE)
-
+                sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
                 loss = model.compute_loss(sequence, label, mimic)
                 model.optimize()
-
                 train_loss.update(loss)
-
                 if i % 5 == 0:
                     print("[ Epoch: {}/{} - Item: {}/{} ] | [ Train loss: {:.4f} ]"
                           .format(epoch, EPOCHS, i, training_set_size, loss))
@@ -98,10 +88,7 @@ def main():
             train_time = time.time() - start
             log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
 
-            # --- Validation ---
-
             start = time.time()
-
             val_loss.reset()
 
             if epoch % 5 == 0:
@@ -115,9 +102,8 @@ def main():
                     model.evaluation_mode()
                     evaluator.reset_errors()
 
-                    for i, data in enumerate(test_loader):
+                    for i, (sequence, mimic, label, file_name) in enumerate(test_loader):
 
-                        sequence, mimic, label, file_name = data
                         sequence = sequence.unsqueeze(1).to(DEVICE) if len(sequence.shape) == 4 else sequence.to(DEVICE)
                         mimic = mimic.to(DEVICE)
                         label = label.to(DEVICE)

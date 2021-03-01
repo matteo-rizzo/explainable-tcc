@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 import torch.nn as nn
 
@@ -35,7 +37,7 @@ class ConvLSTM(nn.Module):
             setattr(self, name, cell)
             self._all_layers.append(cell)
 
-    def forward(self, inputs: torch.Tensor) -> tuple:
+    def forward(self, inputs: torch.Tensor) -> Tuple:
         internal_state, outputs = [], []
         x, new_c = None, None
         for step in range(self.step):

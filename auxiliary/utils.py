@@ -1,11 +1,13 @@
 import json
 import os
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms.functional as TF
 from PIL import Image
+from torch.nn.functional import interpolate
 
 from auxiliary.settings import get_device
 
@@ -27,7 +29,7 @@ def log_time(time: float, time_type: str, path_to_log: str):
     open(path_to_log, 'w+').write(json.dumps(data, indent=2))
 
 
-def log_metrics(train_loss: float, val_loss: float, current_metrics: dict, best_metrics: dict, path_to_log: str):
+def log_metrics(train_loss: float, val_loss: float, current_metrics: Dict, best_metrics: Dict, path_to_log: str):
     log_data = pd.DataFrame({
         "train_loss": [train_loss],
         "val_loss": [val_loss],
@@ -45,7 +47,7 @@ def log_metrics(train_loss: float, val_loss: float, current_metrics: dict, best_
                     index=False)
 
 
-def print_metrics(current_metrics: dict, best_metrics: dict):
+def print_metrics(current_metrics: Dict, best_metrics: Dict):
     print(" Mean ......... : {:.4f} (Best: {:.4f})".format(current_metrics["mean"], best_metrics["mean"]))
     print(" Median ....... : {:.4f} (Best: {:.4f})".format(current_metrics["median"], best_metrics["median"]))
     print(" Trimean ...... : {:.4f} (Best: {:.4f})".format(current_metrics["trimean"], best_metrics["trimean"]))
@@ -109,3 +111,8 @@ def scale(x: torch.Tensor) -> torch.Tensor:
     x = x - x.min()
     x = x - x.max()
     return x
+
+
+def rescale(x: torch.Tensor, size: Tuple) -> torch.Tensor:
+    """ Rescale tensor to image size for better visualization """
+    return interpolate(x, size, mode='bilinear')

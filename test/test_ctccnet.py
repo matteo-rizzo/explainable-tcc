@@ -49,8 +49,7 @@ def main():
     inference_times = []
 
     with torch.no_grad():
-        for i, data in enumerate(test_loader):
-            seq, mimic, label, file_name = data
+        for i, (seq, mimic, label, file_name) in enumerate(test_loader):
             seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
 
             tic = time.perf_counter()

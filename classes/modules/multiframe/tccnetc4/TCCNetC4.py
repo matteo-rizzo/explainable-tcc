@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 from torch import nn
 from torch.nn.functional import normalize
@@ -31,7 +33,7 @@ class TCCNetC4(nn.Module):
             nn.Sigmoid()
         )
 
-    def __init_hidden(self, batch_size: int, h: int, w: int) -> tuple:
+    def __init_hidden(self, batch_size: int, h: int, w: int) -> Tuple:
         hidden_state = torch.zeros((batch_size, self.hidden_size, h, w)).to(self.device)
         cell_state = torch.zeros((batch_size, self.hidden_size, h, w)).to(self.device)
         return hidden_state, cell_state
@@ -68,4 +70,4 @@ class TCCNetC4(nn.Module):
         c = torch.cat((hidden_state_1, hidden_state_2), 1)
         c = self.fc(c)
 
-        return normalize(c if len(c.shape) == 2 else torch.sum(torch.sum(c, 2), 2), dim=1)
+        return normalize(torch.sum(torch.sum(c, 2), 2), dim=1)
