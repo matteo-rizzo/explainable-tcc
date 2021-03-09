@@ -39,7 +39,7 @@ class ModelAttentionTCCNet(BaseModel):
         x_b = (x < 0.5).type(torch.FloatTensor)
         return -(x * x_a).mean(0).sum() * reg_factor * 0.5 + (x * x_b).mean(0).sum() * reg_factor * 0.5
 
-    def get_regularized_loss(self, pred, label, attention_mask):
+    def get_regularized_loss(self, pred, label, attention_mask) -> torch.Tensor:
         angular_loss = self.get_angular_loss(pred, label)
         total_variation_loss = self.get_total_variation_loss(attention_mask)
         contrast_loss = self.get_contrast_loss(attention_mask)
