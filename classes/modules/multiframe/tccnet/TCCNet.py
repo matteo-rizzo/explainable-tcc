@@ -51,7 +51,6 @@ class TCCNet(nn.Module):
         @param b: the mimic sequences of shape "bs x ts x nc x h x w"
         @return: the normalized illuminant prediction
         """
-
         batch_size, time_steps, num_channels, h, w = a.shape
         a = a.view(batch_size * time_steps, num_channels, h, w)
         b = b.view(batch_size * time_steps, num_channels, h, w)

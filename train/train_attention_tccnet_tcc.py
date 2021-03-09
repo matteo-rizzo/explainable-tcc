@@ -26,7 +26,7 @@ MODELS = {"tccnet": ModelAttentionTCCNet}
 def main():
     evaluator = Evaluator()
 
-    path_to_log = os.path.join("logs", "tcc", MODEL_TYPE + "_" + DATA_FOLDER + "_" + str(time.time()))
+    path_to_log = os.path.join("logs", "tcc", "{}_{}_{}".format(MODEL_TYPE, DATA_FOLDER, + time.time()))
     os.makedirs(path_to_log)
 
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
