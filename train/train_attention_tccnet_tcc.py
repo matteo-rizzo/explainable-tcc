@@ -103,8 +103,8 @@ def main():
 
                     sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
 
-                    o = model.predict(sequence, mimic)
-                    loss = model.get_angular_loss(o, label).item()
+                    pred, _, confidence = model.predict(sequence, mimic, return_steps=True)
+                    loss = model.get_regularized_loss(pred, label, attention_mask=confidence).item()
                     val_loss.update(loss)
                     evaluator.add_error(loss)
 
