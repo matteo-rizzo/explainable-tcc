@@ -5,36 +5,41 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 
 from auxiliary.settings import DEVICE
-from auxiliary.utils import log_experiment, print_metrics, log_metrics, log_time
+from auxiliary.utils import log_experiment, log_metrics, print_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
-from classes.modules.multiframe.ctccnet.ModelCTCCNet import ModelCTCCNet
-from classes.modules.multiframe.ctccnetc4.ModelCTCCNetC4 import ModelCTCCNetC4
+from classes.modules.multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
 
-MODEL_TYPE = "ctccnet"
+MODEL_TYPE = "tccnet"
 DATA_FOLDER = "tcc_split"
-BATCH_SIZE = 1
 EPOCHS = 2000
+BATCH_SIZE = 1
 LEARNING_RATE = 0.00003
-PATH_TO_PTH_SUBMODULE = os.path.join("trained_models", "full_seq", "tccnetc4", DATA_FOLDER, "model.pth")
+
+# The ids of the sequences to be monitored (e.g., ["0", "1", "2"])
+TEST_VIS_IMG = []
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
 
-MODELS = {"ctccnet": ModelCTCCNet, "ctccnetc4": ModelCTCCNetC4}
+MODELS = {"tccnet": ModelAttentionTCCNet}
 
 
 def main():
     evaluator = Evaluator()
 
-    path_to_log = os.path.join("logs", "tcc", MODEL_TYPE + "_" + DATA_FOLDER + "_" + str(time.time()))
+    path_to_log = os.path.join("train", "tcc", "logs", "", "{}_{}_{}".format(MODEL_TYPE, DATA_FOLDER, + time.time()))
     os.makedirs(path_to_log)
 
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
     path_to_experiment_log = os.path.join(path_to_log, "experiment.json")
-
     log_experiment(MODEL_TYPE, DATA_FOLDER, LEARNING_RATE, path_to_experiment_log)
+
+    path_to_vis = os.path.join(path_to_log, "test_vis")
+    if TEST_VIS_IMG:
+        print("Test vis for monitored sequences {} will be saved at {}\n".format(TEST_VIS_IMG, path_to_vis))
+        os.makedirs(path_to_vis)
 
     print("\nLoading data from '{}':".format(DATA_FOLDER))
 
@@ -53,21 +58,13 @@ def main():
     if RELOAD_CHECKPOINT:
         print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
         model.load(PATH_TO_PTH_CHECKPOINT)
-    else:
-        if PATH_TO_PTH_SUBMODULE != '':
-            print('\n Loading pretrained submodules stored at: {} \n'.format(PATH_TO_PTH_SUBMODULE))
-            model.load_submodules(PATH_TO_PTH_SUBMODULE)
 
     model.print_network()
     model.log_network(path_to_log)
-
     model.set_optimizer(learning_rate=LEARNING_RATE)
 
-    print('\n Training starts... \n')
-
     best_val_loss, best_metrics = 100.0, evaluator.get_best_metrics()
-    train_l1, train_l2, train_l3, train_mal = LossTracker(), LossTracker(), LossTracker(), LossTracker()
-    val_l1, val_l2, val_l3, val_mal = LossTracker(), LossTracker(), LossTracker(), LossTracker()
+    train_loss, val_loss = LossTracker(), LossTracker()
 
     for epoch in range(EPOCHS):
 
@@ -76,37 +73,26 @@ def main():
         print("--------------------------------------------------------------\n")
 
         model.train_mode()
-        train_l1.reset()
-        train_l2.reset()
-        train_l3.reset()
-        train_mal.reset()
+        train_loss.reset()
         start = time.time()
 
-        for i, (sequence, mimic, label, file_name) in enumerate(train_loader):
+        for i, (seq, mimic, label, file_name) in enumerate(train_loader):
+
             model.reset_gradient()
-            sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
-            o1, o2, o3 = model.predict(sequence, mimic)
-            l1, l2, l3, mal = model.compute_loss([o1, o2, o3], label)
-            mal.backward()
+            seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
+            loss = model.compute_loss(seq, label, mimic)
             model.optimize()
 
-            train_l1.update(l1.item())
-            train_l2.update(l2.item())
-            train_l3.update(l3.item())
-            train_mal.update(mal.item())
+            train_loss.update(loss)
 
             if i % 5 == 0:
-                print("[ Epoch: {}/{} - Batch: {}/{} ] | "
-                      "[ Train L1: {:.4f} | Train L2: {:.4f} | Train L3: {:.4f} | Train MAL: {:.4f} ]"
-                      .format(epoch, EPOCHS, i, training_set_size, l1.item(), l2.item(), l3.item(), mal.item()))
+                print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
+                      .format(epoch + 1, EPOCHS, i + 1, training_set_size, loss))
 
         train_time = time.time() - start
         log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
 
-        val_l1.reset()
-        val_l2.reset()
-        val_l3.reset()
-        val_mal.reset()
+        val_loss.reset()
         start = time.time()
 
         if epoch % 5 == 0:
@@ -116,23 +102,27 @@ def main():
             print("--------------------------------------------------------------\n")
 
             with torch.no_grad():
+
                 model.evaluation_mode()
                 evaluator.reset_errors()
 
-                for i, (sequence, mimic, label, file_name) in enumerate(test_loader):
-                    sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
-                    o1, o2, o3 = model.predict(sequence, mimic)
-                    l1, l2, l3, mal = model.compute_loss([o1, o2, o3], label)
-                    val_l1.update(l1.item())
-                    val_l2.update(l2.item())
-                    val_l3.update(l3.item())
-                    val_mal.update(mal.item())
-                    evaluator.add_error(l3.item())
+                for i, (seq, mimic, label, file_name) in enumerate(test_loader):
+
+                    sequence_id = file_name[0].split(".")[0]
+                    seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
+
+                    pred, rgb, confidence = model.predict(seq, mimic, return_steps=True)
+                    loss = model.get_regularized_loss(pred, label, attention_mask=confidence).item()
+                    val_loss.update(loss)
+                    evaluator.add_error(loss)
+
+                    if sequence_id in TEST_VIS_IMG:
+                        model.vis_confidence({"seq": seq, "label": label, "pred": pred, "rgb": rgb, "c": confidence},
+                                             os.path.join(path_to_vis, sequence_id, "epoch_{}.png".format(epoch)))
 
                     if i % 5 == 0:
-                        print("[ Epoch: {}/{} - Batch: {}/{} ] | "
-                              "[ Val L1: {:.4f} | Val L2: {:.4f} | Val L3: {:.4f} | Val MAL: {:.4f} ]"
-                              .format(epoch, EPOCHS, i, test_set_size, l1.item(), l2.item(), l3.item(), mal.item()))
+                        print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
+                              .format(epoch, EPOCHS, i, test_set_size, loss))
 
             print("\n--------------------------------------------------------------\n")
 
@@ -142,28 +132,22 @@ def main():
         metrics = evaluator.compute_metrics()
         print("\n********************************************************************")
         print(" Train Time ... : {:.4f}".format(train_time))
-        print(" Train MAL .... : {:.4f}".format(train_mal.avg))
-        print(" Train L1 ..... : {:.4f}".format(train_l1.avg))
-        print(" Train L2 ..... : {:.4f}".format(train_l2.avg))
-        print(" Train L3 ..... : {:.4f}".format(train_l3.avg))
+        print(" Train Loss ... : {:.4f}".format(train_loss.avg))
         if val_time > 0.1:
             print("....................................................................")
             print(" Val Time ..... : {:.4f}".format(val_time))
-            print(" Val MAL ...... : {:.4f}".format(val_mal.avg))
-            print(" Val L1 ....... : {:.4f}".format(val_l1.avg))
-            print(" Val L2 ....... : {:.4f}".format(val_l2.avg))
-            print(" Val L3 ....... : {:.4f} (Best: {:.4f})".format(val_l3.avg, best_val_loss))
+            print(" Val Loss ..... : {:.4f}".format(val_loss.avg))
             print("....................................................................")
             print_metrics(metrics, best_metrics)
         print("********************************************************************\n")
 
-        if 0 < val_l3.avg < best_val_loss:
-            best_val_loss = val_l3.avg
+        if 0 < val_loss.avg < best_val_loss:
+            best_val_loss = val_loss.avg
             best_metrics = evaluator.update_best_metrics()
             print("Saving new best model... \n")
             model.save(os.path.join(path_to_log, "model.pth"))
 
-        log_metrics(train_mal.avg, val_mal.avg, metrics, best_metrics, path_to_metrics_log)
+        log_metrics(train_loss.avg, val_loss.avg, metrics, best_metrics, path_to_metrics_log)
 
 
 if __name__ == '__main__':
