@@ -16,6 +16,8 @@ DATA_FOLDER = "tcc_split"
 EPOCHS = 2000
 BATCH_SIZE = 1
 LEARNING_RATE = 0.00003
+# TEST_VIS_IMG = ["0", "1", "2"]
+TEST_VIS_IMG = []
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
@@ -31,8 +33,12 @@ def main():
 
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
     path_to_experiment_log = os.path.join(path_to_log, "experiment.json")
-
     log_experiment(MODEL_TYPE, DATA_FOLDER, LEARNING_RATE, path_to_experiment_log)
+
+    path_to_vis = os.path.join(path_to_log, "test_vis")
+    if TEST_VIS_IMG:
+        print("Test vis for monitored sequences {} will be saved at {}\n".format(TEST_VIS_IMG, path_to_vis))
+        os.makedirs(path_to_vis)
 
     print("\nLoading data from '{}':".format(DATA_FOLDER))
 
@@ -69,11 +75,11 @@ def main():
         train_loss.reset()
         start = time.time()
 
-        for i, (sequence, mimic, label, file_name) in enumerate(train_loader):
+        for i, (seq, mimic, label, file_name) in enumerate(train_loader):
 
             model.reset_gradient()
-            sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
-            loss = model.compute_loss(sequence, label, mimic)
+            seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
+            loss = model.compute_loss(seq, label, mimic)
             model.optimize()
 
             train_loss.update(loss)
@@ -99,14 +105,19 @@ def main():
                 model.evaluation_mode()
                 evaluator.reset_errors()
 
-                for i, (sequence, mimic, label, file_name) in enumerate(test_loader):
+                for i, (seq, mimic, label, file_name) in enumerate(test_loader):
 
-                    sequence, mimic, label = sequence.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
+                    sequence_id = file_name[0].split(".")[0]
+                    seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
 
-                    pred, _, confidence = model.predict(sequence, mimic, return_steps=True)
+                    pred, rgb, confidence = model.predict(seq, mimic, return_steps=True)
                     loss = model.get_regularized_loss(pred, label, attention_mask=confidence).item()
                     val_loss.update(loss)
                     evaluator.add_error(loss)
+
+                    if sequence_id in TEST_VIS_IMG:
+                        model.vis_confidence({"seq": seq, "label": label, "pred": pred, "rgb": rgb, "c": confidence},
+                                             os.path.join(path_to_vis, sequence_id, "epoch_{}.png".format(epoch)))
 
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
