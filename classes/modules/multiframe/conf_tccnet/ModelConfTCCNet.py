@@ -11,17 +11,17 @@ from torchvision.transforms import transforms
 from auxiliary.settings import DEVICE
 from auxiliary.utils import correct, rescale, scale
 from classes.modules.common.BaseModel import BaseModel
-from classes.modules.multiframe.attention_tccnet.AttentionTCCNet import AttentionTCCNet
+from multiframe.conf_tccnet.ConfTCCNet import ConfTCCNet
 
 
-class ModelAttentionTCCNet(BaseModel):
+class ModelConfTCCNet(BaseModel):
 
     def __init__(self):
         super().__init__()
-        self._network = AttentionTCCNet().float().to(self._device)
+        self._network = ConfTCCNet().float().to(self._device)
 
-    def predict(self, sequence: Tensor, mimic: Tensor = None, return_steps: bool = False) -> Union[Tuple, Tensor]:
-        pred, rgb, confidence = self._network(sequence, mimic)
+    def predict(self, sequence: Tensor, m: Tensor = None, return_steps: bool = False) -> Union[Tuple, Tensor]:
+        pred, rgb, confidence = self._network(sequence)
         if return_steps:
             return pred, rgb, confidence
         return pred
@@ -29,10 +29,10 @@ class ModelAttentionTCCNet(BaseModel):
     def vis_confidence(self, model_output: dict, path_to_plot: str):
         model_output = {k: v.clone().detach().to(DEVICE) for k, v in model_output.items()}
 
-        seq, label, pred = model_output["seq"], model_output["label"], model_output["pred"]
+        x, y, pred = model_output["x"], model_output["y"], model_output["pred"]
         rgb, c = model_output["rgb"], model_output["c"]
 
-        original = transforms.ToPILImage()(seq.squeeze()).convert("RGB")
+        original = transforms.ToPILImage()(x.squeeze()).convert("RGB")
         est_corrected = correct(original, pred)
 
         size = original.size[::-1]
@@ -55,7 +55,7 @@ class ModelAttentionTCCNet(BaseModel):
                 axs[i, j].axis("off")
 
         os.makedirs(os.sep.join(path_to_plot.split(os.sep)[:-1]), exist_ok=True)
-        epoch, loss = path_to_plot.split(os.sep)[-1].split("_")[-1].split(".")[0], self.get_angular_loss(pred, label)
+        epoch, loss = path_to_plot.split(os.sep)[-1].split("_")[-1].split(".")[0], self.get_angular_loss(pred, y)
         stages.suptitle("EPOCH {} - ERROR: {:.4f}".format(epoch, loss))
         stages.savefig(os.path.join(path_to_plot), bbox_inches='tight', dpi=200)
         plt.clf()
@@ -73,14 +73,14 @@ class ModelAttentionTCCNet(BaseModel):
         diff_j = torch.sum(torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]))
         return reg_factor * (diff_i + diff_j)
 
-    def get_regularized_loss(self, pred, label, attention_mask) -> torch.Tensor:
-        angular_loss = self.get_angular_loss(pred, label)
+    def get_regularized_loss(self, pred, y, attention_mask) -> torch.Tensor:
+        angular_loss = self.get_angular_loss(pred, y)
         total_variation_loss = self.get_total_variation_loss(attention_mask)
         # return angular_loss + total_variation_loss
         return angular_loss
 
-    def compute_loss(self, sequence: Tensor, label: Tensor, mimic: Tensor = None) -> float:
-        pred, _, confidence = self.predict(sequence, mimic, return_steps=True)
-        loss = self.get_regularized_loss(pred, label, attention_mask=confidence)
+    def compute_loss(self, sequence: Tensor, y: Tensor, m: Tensor = None) -> float:
+        pred, _, confidence = self.predict(sequence, m, return_steps=True)
+        loss = self.get_regularized_loss(pred, y, attention_mask=confidence)
         loss.backward()
         return loss.item()

@@ -6,14 +6,8 @@ from torch.nn.functional import normalize
 
 from classes.modules.common.squeezenet.SqueezeNetLoader import SqueezeNetLoader
 
-"""
-FC4: Fully Convolutional Color Constancy with Confidence-weighted Pooling
-* Original code: https://github.com/yuanming-hu/fc4
-* Paper: https://www.microsoft.com/en-us/research/publication/fully-convolutional-color-constancy-confidence-weighted-pooling/
-"""
 
-
-class FC4(torch.nn.Module):
+class ConfidenceFCN(torch.nn.Module):
 
     def __init__(self, squeezenet_version: float = 1.1):
         super().__init__()
@@ -49,7 +43,4 @@ class FC4(torch.nn.Module):
         # Confidence (last dimension)
         confidence = out[:, 3:4, :, :]
 
-        # Confidence-weighted pooling
-        pred = normalize(torch.sum(torch.sum(rgb * confidence, 2), 2), dim=1)
-
-        return pred, rgb, confidence
+        return rgb, confidence

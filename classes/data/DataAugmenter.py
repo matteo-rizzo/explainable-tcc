@@ -190,7 +190,7 @@ class DataAugmenter:
             num_steps = 1
             img = img
         else:
-            raise ValueError("Bad image shape detected augmenting mimic: {}".format(img.shape))
+            raise ValueError("Bad image shape detected augmenting m: {}".format(img.shape))
 
         augmented_frames, img_temp = [], img[:, :, ::-1] * (1.0 / 255)
         for _ in range(num_steps):

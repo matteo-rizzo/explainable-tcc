@@ -7,23 +7,18 @@ from torch.utils.data import DataLoader
 from auxiliary.settings import DEVICE
 from auxiliary.utils import log_experiment, log_metrics, print_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
-from classes.modules.multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
+from classes.modules.multiframe.conf_att_tccnet.ModelConfAttTCCNet import ModelConfAttTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
 
-MODEL_TYPE = "tccnet"
+MODEL_TYPE = "conf_att_tccnet"
 DATA_FOLDER = "tcc_split"
 EPOCHS = 2000
 BATCH_SIZE = 1
 LEARNING_RATE = 0.00003
 
-# The ids of the sequences to be monitored (e.g., ["0", "1", "2"])
-TEST_VIS_IMG = []
-
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
-
-MODELS = {"tccnet": ModelAttentionTCCNet}
 
 
 def main():
@@ -53,7 +48,7 @@ def main():
     print("Training set size: ... {}".format(training_set_size))
     print("Test set size: ....... {}\n".format(test_set_size))
 
-    model = MODELS[MODEL_TYPE]()
+    model = ModelConfAttTCCNet()
 
     if RELOAD_CHECKPOINT:
         print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
@@ -76,11 +71,11 @@ def main():
         train_loss.reset()
         start = time.time()
 
-        for i, (seq, mimic, label, file_name) in enumerate(train_loader):
+        for i, (x, m, y, file_name) in enumerate(train_loader):
 
             model.reset_gradient()
-            seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
-            loss = model.compute_loss(seq, label, mimic)
+            x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
+            loss = model.compute_loss(x, y, m)
             model.optimize()
 
             train_loss.update(loss)
@@ -106,18 +101,18 @@ def main():
                 model.evaluation_mode()
                 evaluator.reset_errors()
 
-                for i, (seq, mimic, label, file_name) in enumerate(test_loader):
+                for i, (x, m, y, file_name) in enumerate(test_loader):
 
                     sequence_id = file_name[0].split(".")[0]
-                    seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
+                    x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
 
-                    pred, rgb, confidence = model.predict(seq, mimic, return_steps=True)
-                    loss = model.get_regularized_loss(pred, label, attention_mask=confidence).item()
+                    pred, rgb, confidence = model.predict(x, m, return_steps=True)
+                    loss = model.get_loss(pred, y)
                     val_loss.update(loss)
                     evaluator.add_error(loss)
 
                     if sequence_id in TEST_VIS_IMG:
-                        model.vis_confidence({"seq": seq, "label": label, "pred": pred, "rgb": rgb, "c": confidence},
+                        model.vis_confidence({"x": x, "y": y, "pred": pred, "rgb": rgb, "c": confidence},
                                              os.path.join(path_to_vis, sequence_id, "epoch_{}.png".format(epoch)))
 
                     if i % 5 == 0:

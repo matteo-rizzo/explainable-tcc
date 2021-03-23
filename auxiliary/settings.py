@@ -33,3 +33,6 @@ def get_device() -> torch.device:
 
 
 DEVICE = get_device()
+
+# The ids of the sequences to be monitored at training time (e.g., ["0", "1", "2"])
+TEST_VIS_IMG = []

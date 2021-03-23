@@ -74,10 +74,10 @@ def convert_data(file_names: list, set_type: str):
     """
     print("\n Length of {} set: {} \n".format(set_type, len(file_names)))
 
-    for i, seq in enumerate(file_names):
-        illuminant = list(map(float, open(os.path.join(seq, GROUND_TRUTH_FILE), "r").readline().strip().split(',')))
+    for i, x in enumerate(file_names):
+        illuminant = list(map(float, open(os.path.join(x, GROUND_TRUTH_FILE), "r").readline().strip().split(',')))
 
-        files_seq = glob.glob(os.path.join(seq, "[0-9]*.png"))
+        files_seq = glob.glob(os.path.join(x, "[0-9]*.png"))
         files_seq.sort(key=lambda x: x[:-4].split(os.sep)[-1])
 
         if TRUNCATE:
@@ -86,9 +86,9 @@ def convert_data(file_names: list, set_type: str):
         if DOWN_SAMPLE:
             files_seq = np.array(files_seq)[[0, len(files_seq) // 2, -1]]
 
-        seq_id = (i + 1) if USE_CV_METADATA else seq.split(os.sep)[-1]
+        seq_id = (i + 1) if USE_CV_METADATA else x.split(os.sep)[-1]
 
-        print("[ Set type: {} | Item ID: {} | Seq: {} | Len: {}]".format(set_type, seq_id, seq, len(files_seq)))
+        print("[ Set type: {} | Item ID: {} | Seq: {} | Len: {}]".format(set_type, seq_id, x, len(files_seq)))
         save_sequence(files_seq, illuminant, filename="{}{}".format(set_type, seq_id))
 
 

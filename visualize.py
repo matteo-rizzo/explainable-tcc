@@ -10,10 +10,10 @@ from torchvision.transforms import transforms
 from auxiliary.settings import DEVICE
 from auxiliary.utils import correct, rescale, scale
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
-from classes.modules.multiframe.attention_tccnet.ModelAttentionTCCNet import ModelAttentionTCCNet
+from multiframe.conf_tccnet.ModelConfTCCNet import ModelSTAttTCCNet
 from classes.training.Evaluator import Evaluator
 
-MODEL_TYPE = "attention_tccnet"
+MODEL_TYPE = "sta_tccnet"
 DATA_FOLDER = "tcc_split"
 
 # Where to save the generated visualizations
@@ -25,7 +25,7 @@ PATH_TO_PTH = os.path.join("trained_models", "full_seq", MODEL_TYPE, DATA_FOLDER
 # Set to -1 to process all the samples in the test set of the current fold
 NUM_SAMPLES = -1
 
-MODELS = {"attention_tccnet": ModelAttentionTCCNet}
+MODELS = {"sta_tccnet": ModelSTAttTCCNet}
 
 
 def main():
@@ -47,18 +47,18 @@ def main():
     model.evaluation_mode()
 
     with torch.no_grad():
-        for i, (seq, mimic, label, file_name) in enumerate(test_loader):
-            seq, mimic, label = seq.to(DEVICE), mimic.to(DEVICE), label.to(DEVICE)
-            pred, rgb, confidence = model.predict(seq, mimic)
-            loss = model.get_angular_loss(pred, label).item()
+        for i, (x, m, y, file_name) in enumerate(test_loader):
+            x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
+            pred, rgb, confidence = model.predict(x, m)
+            loss = model.get_angular_loss(pred, y).item()
             evaluator.add_error(loss)
 
             file_name = file_name[0].split(os.sep)[-1].split(".")[0]
             print("Item {}: {}, AE: {:.4f}".format(i, file_name, loss))
 
-            for j, frame in enumerate(seq.squeeze(0)):
+            for j, frame in enumerate(x.squeeze(0)):
                 original = transforms.ToPILImage()(frame.squeeze()).convert("RGB")
-                gt_corrected, est_corrected = correct(original, label), correct(original, pred)
+                gt_corrected, est_corrected = correct(original, y), correct(original, pred)
 
                 size = original.size[::-1]
 
