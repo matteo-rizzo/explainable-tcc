@@ -7,11 +7,13 @@ from torch.utils.data import DataLoader
 from auxiliary.settings import DEVICE
 from auxiliary.utils import log_experiment, log_metrics, print_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.modules.multiframe.att_tccnet.ModelAttTCCNet import ModelAttTCCNet
 from classes.modules.multiframe.conf_att_tccnet.ModelConfAttTCCNet import ModelConfAttTCCNet
+from classes.modules.multiframe.conf_tccnet.ModelConfTCCNet import ModelConfTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
 
-MODEL_TYPE = "conf_att_tccnet"
+MODEL_TYPE = "conf_tccnet"
 DATA_FOLDER = "tcc_split"
 EPOCHS = 2000
 BATCH_SIZE = 1
@@ -19,6 +21,8 @@ LEARNING_RATE = 0.00003
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
+
+MODELS = {"att_tccnet": ModelAttTCCNet, "conf_tccnet": ModelConfTCCNet, "conf_att_tccnet": ModelConfAttTCCNet}
 
 
 def main():
@@ -30,11 +34,6 @@ def main():
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
     path_to_experiment_log = os.path.join(path_to_log, "experiment.json")
     log_experiment(MODEL_TYPE, DATA_FOLDER, LEARNING_RATE, path_to_experiment_log)
-
-    path_to_vis = os.path.join(path_to_log, "test_vis")
-    if TEST_VIS_IMG:
-        print("Test vis for monitored sequences {} will be saved at {}\n".format(TEST_VIS_IMG, path_to_vis))
-        os.makedirs(path_to_vis)
 
     print("\nLoading data from '{}':".format(DATA_FOLDER))
 
@@ -48,7 +47,7 @@ def main():
     print("Training set size: ... {}".format(training_set_size))
     print("Test set size: ....... {}\n".format(test_set_size))
 
-    model = ModelConfAttTCCNet()
+    model = MODELS[MODEL_TYPE]()
 
     if RELOAD_CHECKPOINT:
         print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
@@ -72,12 +71,8 @@ def main():
         start = time.time()
 
         for i, (x, m, y, file_name) in enumerate(train_loader):
-
-            model.reset_gradient()
             x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
-            loss = model.compute_loss(x, y, m)
-            model.optimize()
-
+            loss = model.optimize(x, y, m)
             train_loss.update(loss)
 
             if i % 5 == 0:
@@ -102,18 +97,11 @@ def main():
                 evaluator.reset_errors()
 
                 for i, (x, m, y, file_name) in enumerate(test_loader):
-
-                    sequence_id = file_name[0].split(".")[0]
                     x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
-
-                    pred, rgb, confidence = model.predict(x, m, return_steps=True)
+                    pred = model.predict(x, m)
                     loss = model.get_loss(pred, y)
                     val_loss.update(loss)
                     evaluator.add_error(loss)
-
-                    if sequence_id in TEST_VIS_IMG:
-                        model.vis_confidence({"x": x, "y": y, "pred": pred, "rgb": rgb, "c": confidence},
-                                             os.path.join(path_to_vis, sequence_id, "epoch_{}.png".format(epoch)))
 
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"

@@ -18,12 +18,3 @@ class ModelConfAttTCCNet(BaseModel):
         if return_steps:
             return pred, rgb, confidence
         return pred
-
-    def compute_loss(self, x: Tensor, y: Tensor, m: Tensor = None) -> float:
-        pred = self.predict(x, m, return_steps=False)
-        loss = self.get_angular_loss(pred, y)
-        loss.backward()
-        return loss.item()
-
-    def get_loss(self, x: Tensor, y: Tensor) -> float:
-        return self.get_angular_loss(x, y).item()

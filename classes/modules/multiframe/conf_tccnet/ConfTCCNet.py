@@ -14,7 +14,7 @@ from classes.modules.common.ConfidenceFCN import ConfidenceFCN
 class ConfTCCNet(BaseTCCNet):
 
     def __init__(self, hidden_size: int = 128, kernel_size: int = 5):
-        super().__init__(hidden_size, kernel_size)
+        super().__init__(rnn_input_size=3, hidden_size=hidden_size, kernel_size=kernel_size)
         self.fcn = ConfidenceFCN()
 
     def forward(self, x: torch.Tensor) -> Tuple:
@@ -27,15 +27,15 @@ class ConfTCCNet(BaseTCCNet):
 
         # Temporal confidence
         temp_confidence = F.softmax(torch.mean(torch.mean(spat_confidence.squeeze(1), dim=1), dim=1))
-        spat_temp_weighted_est = spat_weighted_est * temp_confidence
+        spat_temp_weighted_est = spat_weighted_est * temp_confidence.unsqueeze(1).unsqueeze(2).unsqueeze(3)
 
         _, _, h, w = spat_weighted_est.shape
         self.conv_lstm.init_hidden(self.hidden_size, (h, w))
-        hidden, cell = self.__init_hidden(batch_size, h, w)
+        hidden, cell = self.init_hidden(batch_size, h, w)
 
         hidden_states = []
         for t in range(time_steps):
-            hidden, cell = self.conv_lstm(spat_temp_weighted_est[t, :, :, :, :], hidden, cell)
+            hidden, cell = self.conv_lstm(spat_temp_weighted_est[t, :, :, :].unsqueeze(0), hidden, cell)
             hidden_states.append(hidden)
 
         y = self.fc(torch.mean(torch.stack(hidden_states), dim=0))

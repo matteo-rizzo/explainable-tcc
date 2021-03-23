@@ -44,17 +44,12 @@ class BaseModel:
         optimizers_map = {"adam": torch.optim.Adam, "rmsprop": torch.optim.RMSprop}
         self.__optimizer = optimizers_map[optimizer_type](self._network.parameters(), lr=learning_rate)
 
-    def reset_gradient(self):
+    def optimize(self, x: Tensor, y: Tensor, m: Tensor = None) -> float:
         self.__optimizer.zero_grad()
-
-    def optimize(self):
-        self.__optimizer.step()
-
-    def compute_loss(self, x: Tensor, y: Tensor, m: Tensor = None) -> float:
-        self.reset_gradient()
         pred = self.predict(x)
         loss = self.get_angular_loss(pred, y)
         loss.backward()
+        self.__optimizer.step()
         return loss.item()
 
     def get_loss(self, x: Tensor, y: Tensor) -> float:
