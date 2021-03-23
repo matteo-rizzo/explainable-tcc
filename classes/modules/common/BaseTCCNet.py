@@ -3,8 +3,8 @@ from typing import Tuple
 import torch
 from torch import nn
 
+from auxiliary.settings import DEVICE
 from classes.modules.common.conv_lstm.ConvLSTMCell import ConvLSTMCell
-from settings import DEVICE
 
 
 class BaseTCCNet(nn.Module):

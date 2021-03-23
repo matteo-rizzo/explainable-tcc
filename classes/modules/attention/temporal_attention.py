@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
 
-from settings import DEVICE
+from auxiliary.settings import DEVICE
 
 
 class TemporalAttentionModule(nn.Module):
