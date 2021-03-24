@@ -3,14 +3,6 @@ import re
 import numpy as np
 import torch
 
-# --- Determinism (for reproducibility) ---
-
-RANDOM_SEED = 0
-
-torch.manual_seed(RANDOM_SEED)
-np.random.seed(RANDOM_SEED)
-torch.backends.cudnn.benchmark = False
-
 # --- Device (cpu or cuda:n) ---
 
 DEVICE_TYPE = "cuda:0"
@@ -33,6 +25,15 @@ def get_device() -> torch.device:
 
 
 DEVICE = get_device()
+
+
+# --- Determinism (for reproducibility) ---
+
+def make_deterministic(random_seed: int = 0):
+    torch.manual_seed(random_seed)
+    np.random.seed(random_seed)
+    torch.backends.cudnn.benchmark = False
+
 
 # The ids of the sequences to be monitored at training time (e.g., ["0", "1", "2"])
 TEST_VIS_IMG = []

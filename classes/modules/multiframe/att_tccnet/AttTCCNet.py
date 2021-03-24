@@ -4,8 +4,8 @@ import torch
 from torch import nn
 from torch.nn.functional import normalize
 
-from classes.modules.attention.spatial_attention import SpatialAttentionModule
-from classes.modules.attention.temporal_attention import TemporalAttentionModule
+from classes.modules.attention.SpatialAttentionModule import SpatialAttentionModule
+from classes.modules.attention.TemporalAttentionModule import TemporalAttentionModule
 from classes.modules.common.BaseTCCNet import BaseTCCNet
 from classes.modules.common.squeezenet.SqueezeNetLoader import SqueezeNetLoader
 
@@ -47,7 +47,7 @@ class AttTCCNet(BaseTCCNet):
         hidden, cell = self.init_hidden(batch_size, h, w)
 
         hidden_states, temp_mask = [], []
-        for _ in range(time_steps):
+        for t in range(time_steps):
             # Temporal attention
             temp_weights = self.temp_att(spat_weighted_est, hidden)
             spat_temp_weighted_est = torch.div(torch.sum(spat_weighted_est * temp_weights, dim=0), time_steps)

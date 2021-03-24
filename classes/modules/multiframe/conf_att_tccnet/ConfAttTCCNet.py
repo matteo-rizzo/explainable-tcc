@@ -4,7 +4,7 @@ import torch
 from torch.nn.functional import normalize
 
 from auxiliary.utils import scale
-from classes.modules.attention.temporal_attention import TemporalAttentionModule
+from classes.modules.attention.TemporalAttentionModule import TemporalAttentionModule
 from classes.modules.common.BaseTCCNet import BaseTCCNet
 from classes.modules.common.ConfidenceFCN import ConfidenceFCN
 
