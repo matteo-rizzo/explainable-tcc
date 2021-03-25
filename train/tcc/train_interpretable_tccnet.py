@@ -110,7 +110,7 @@ def main(opt):
 
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
-                              .format(epoch, EPOCHS, i, test_set_size, loss))
+                              .format(epoch + 1, EPOCHS, i + 1, test_set_size, loss))
 
             print("\n--------------------------------------------------------------\n")
 
