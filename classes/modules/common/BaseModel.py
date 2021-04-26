@@ -19,7 +19,7 @@ class BaseModel:
         self._network = None
         self.__optimizer = None
 
-    def predict(self, x: torch.Tensor) -> Union[torch.Tensor, tuple]:
+    def predict(self, x: torch.Tensor, m: torch.Tensor = None) -> Union[torch.Tensor, tuple]:
         pass
 
     def print_network(self):
@@ -46,7 +46,7 @@ class BaseModel:
 
     def optimize(self, x: Tensor, y: Tensor, m: Tensor = None) -> float:
         self.__optimizer.zero_grad()
-        pred = self.predict(x)
+        pred = self.predict(x, m)
         loss = self.get_angular_loss(pred, y)
         loss.backward()
         self.__optimizer.step()

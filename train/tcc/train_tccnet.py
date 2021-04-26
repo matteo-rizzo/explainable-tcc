@@ -1,58 +1,51 @@
-import argparse
 import os
 import time
 
 import torch.utils.data
 from torch.utils.data import DataLoader
 
-from auxiliary.settings import DEVICE, make_deterministic
-from auxiliary.utils import log_experiment, log_metrics, log_time, print_val_metrics
+from auxiliary.settings import DEVICE
+from auxiliary.utils import log_experiment, log_metrics, print_val_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
-from classes.modules.multiframe.att_tccnet.ModelAttTCCNet import ModelAttTCCNet
-from classes.modules.multiframe.conf_att_tccnet.ModelConfAttTCCNet import ModelConfAttTCCNet
-from classes.modules.multiframe.conf_tccnet.ModelConfTCCNet import ModelConfTCCNet
+from classes.modules.multiframe.tccnet.ModelTCCNet import ModelTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
 
-MODEL_TYPE = "conf_tccnet"
 DATA_FOLDER = "tcc_split"
+USE_SHOT_BRANCH = False
 EPOCHS = 2000
+BATCH_SIZE = 1
 LEARNING_RATE = 0.00003
-RANDOM_SEED = 0
+PATH_TO_LOGS = os.path.join("train", "tcc", "logs")
 
 RELOAD_CHECKPOINT = False
-PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
-
-MODELS = {"att_tccnet": ModelAttTCCNet, "conf_tccnet": ModelConfTCCNet, "conf_att_tccnet": ModelConfAttTCCNet}
+PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format("tccnet", DATA_FOLDER), "model.pth")
 
 
-def main(opt):
-    model_type = opt.model_type
-    data_folder = opt.data_folder
-    epochs = opt.epochs
-    learning_rate = opt.lr
+def main():
     evaluator = Evaluator()
 
-    path_to_log = os.path.join("train", "tcc", "logs", "", "{}_{}_{}".format(model_type, data_folder, + time.time()))
+    path_to_log = os.path.join(PATH_TO_LOGS, "{}_{}_{}".format("tccnet", DATA_FOLDER, str(time.time())))
     os.makedirs(path_to_log)
 
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
     path_to_experiment_log = os.path.join(path_to_log, "experiment.json")
-    log_experiment(model_type, data_folder, learning_rate, path_to_experiment_log)
 
-    print("\nLoading data from '{}':".format(data_folder))
+    log_experiment("tccnet", DATA_FOLDER, LEARNING_RATE, path_to_experiment_log)
 
-    training_set = TemporalColorConstancy(mode="train", data_folder=data_folder)
-    train_loader = DataLoader(dataset=training_set, batch_size=1, shuffle=True, num_workers=8)
+    print("\nLoading data from '{}':".format(DATA_FOLDER))
 
-    test_set = TemporalColorConstancy(mode="test", data_folder=data_folder)
-    test_loader = DataLoader(dataset=test_set, batch_size=1, num_workers=8)
+    training_set = TemporalColorConstancy(mode="train", data_folder=DATA_FOLDER)
+    train_loader = DataLoader(dataset=training_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+
+    test_set = TemporalColorConstancy(mode="test", data_folder=DATA_FOLDER)
+    test_loader = DataLoader(dataset=test_set, batch_size=BATCH_SIZE, num_workers=8)
 
     training_set_size, test_set_size = len(training_set), len(test_set)
     print("Training set size: ... {}".format(training_set_size))
     print("Test set size: ....... {}\n".format(test_set_size))
 
-    model = MODELS[model_type]()
+    model = ModelTCCNet(USE_SHOT_BRANCH)
 
     if RELOAD_CHECKPOINT:
         print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
@@ -60,35 +53,34 @@ def main(opt):
 
     model.print_network()
     model.log_network(path_to_log)
-    model.set_optimizer(learning_rate)
+
+    model.set_optimizer(learning_rate=LEARNING_RATE)
+
+    print('\n Training starts... \n')
 
     best_val_loss, best_metrics = 100.0, evaluator.get_best_metrics()
     train_loss, val_loss = LossTracker(), LossTracker()
 
-    for epoch in range(epochs):
-
-        print("\n--------------------------------------------------------------")
-        print("\t\t Training epoch {}/{}".format(epoch + 1, epochs))
-        print("--------------------------------------------------------------\n")
+    for epoch in range(EPOCHS):
 
         model.train_mode()
         train_loss.reset()
         start = time.time()
 
-        for i, (x, m, y, file_name) in enumerate(train_loader):
-            x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
-            loss = model.optimize(x, y, m)
+        for i, (temp_seq, shot_seq, label, file_name) in enumerate(train_loader):
+            temp_seq, shot_seq, label = temp_seq.to(DEVICE), shot_seq.to(DEVICE), label.to(DEVICE)
+            loss = model.optimize(x=temp_seq, y=label, m=shot_seq)
             train_loss.update(loss)
 
             if i % 5 == 0:
                 print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
-                      .format(epoch + 1, epochs, i + 1, training_set_size, loss))
+                      .format(epoch, EPOCHS, i, training_set_size, loss))
 
         train_time = time.time() - start
         log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
 
-        val_loss.reset()
         start = time.time()
+        val_loss.reset()
 
         if epoch % 5 == 0:
 
@@ -101,16 +93,16 @@ def main(opt):
                 model.evaluation_mode()
                 evaluator.reset_errors()
 
-                for i, (x, m, y, file_name) in enumerate(test_loader):
-                    x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
-                    pred = model.predict(x, m)
-                    loss = model.get_loss(pred, y)
+                for i, (temp_seq, shot_seq, label, file_name) in enumerate(test_loader):
+                    temp_seq, shot_seq, label = temp_seq.to(DEVICE), shot_seq.to(DEVICE), label.to(DEVICE)
+                    o = model.predict(temp_seq, shot_seq)
+                    loss = model.get_angular_loss(o, label).item()
                     val_loss.update(loss)
                     evaluator.add_error(loss)
 
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
-                              .format(epoch + 1, EPOCHS, i + 1, test_set_size, loss))
+                              .format(epoch, EPOCHS, i, test_set_size, loss))
 
             print("\n--------------------------------------------------------------\n")
 
@@ -139,20 +131,4 @@ def main(opt):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model_type", type=str, default=MODEL_TYPE)
-    parser.add_argument('--data_folder', type=str, default=DATA_FOLDER)
-    parser.add_argument('--epochs', type=int, default=EPOCHS)
-    parser.add_argument('--lr', type=float, default=LEARNING_RATE)
-    parser.add_argument('--random_seed', type=int, default=RANDOM_SEED)
-    opt = parser.parse_args()
-
-    print("\n *** Training configuration ***")
-    print("\t Model type ...... : {}".format(opt.model_type))
-    print("\t Data folder ..... : {}".format(opt.data_folder))
-    print("\t Epochs .......... : {}".format(opt.epochs))
-    print("\t Learning rate ... : {}".format(opt.lr))
-    print("\t Random seed ..... : {}".format(opt.random_seed))
-
-    make_deterministic(opt.random_seed)
-    main(opt)
+    main()

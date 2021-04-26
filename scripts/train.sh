@@ -16,6 +16,7 @@ source venv/bin/activate
 #export PYTHONPATH=$PYTHONPATH:~/projects/def-conati/marizzo/xai/interpretable-tcc
 export PYTHONPATH=$PYTHONPATH:~/home/matteo/Projects/interpretable-tcc
 
+python3 train/tcc/train_tccnet.py || exit
 python3 train/tcc/train_interpretable_tccnet.py --model_type "att_tccnet" || exit
 python3 train/tcc/train_interpretable_tccnet.py --model_type "conf_tccnet" || exit
 python3 train/tcc/train_interpretable_tccnet.py --model_type "conf_att_tccnet" || exit
