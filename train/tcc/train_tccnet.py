@@ -1,10 +1,11 @@
+import argparse
 import os
 import time
 
 import torch.utils.data
 from torch.utils.data import DataLoader
 
-from auxiliary.settings import DEVICE
+from auxiliary.settings import DEVICE, make_deterministic
 from auxiliary.utils import log_experiment, log_metrics, print_val_metrics, log_time
 from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
 from classes.modules.multiframe.tccnet.ModelTCCNet import ModelTCCNet
@@ -14,38 +15,43 @@ from classes.training.LossTracker import LossTracker
 DATA_FOLDER = "tcc_split"
 USE_SHOT_BRANCH = False
 EPOCHS = 2000
-BATCH_SIZE = 1
 LEARNING_RATE = 0.00003
+RANDOM_SEED = 0
+
 PATH_TO_LOGS = os.path.join("train", "tcc", "logs")
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format("tccnet", DATA_FOLDER), "model.pth")
 
 
-def main():
+def main(opt):
+    data_folder = opt.data_folder
+    epochs = opt.epochs
+    learning_rate = opt.lr
+    use_shot_branch = opt.use_shot_branch
     evaluator = Evaluator()
 
-    path_to_log = os.path.join(PATH_TO_LOGS, "{}_{}_{}".format("tccnet", DATA_FOLDER, str(time.time())))
+    path_to_log = os.path.join(PATH_TO_LOGS, "{}_{}_{}".format("tccnet", data_folder, str(time.time())))
     os.makedirs(path_to_log)
 
     path_to_metrics_log = os.path.join(path_to_log, "metrics.csv")
     path_to_experiment_log = os.path.join(path_to_log, "experiment.json")
 
-    log_experiment("tccnet", DATA_FOLDER, LEARNING_RATE, path_to_experiment_log)
+    log_experiment("tccnet", data_folder, learning_rate, path_to_experiment_log)
 
-    print("\nLoading data from '{}':".format(DATA_FOLDER))
+    print("\nLoading data from '{}':".format(data_folder))
 
-    training_set = TemporalColorConstancy(mode="train", data_folder=DATA_FOLDER)
-    train_loader = DataLoader(dataset=training_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+    training_set = TemporalColorConstancy(mode="train", data_folder=data_folder)
+    train_loader = DataLoader(dataset=training_set, batch_size=1, shuffle=True, num_workers=8)
 
-    test_set = TemporalColorConstancy(mode="test", data_folder=DATA_FOLDER)
-    test_loader = DataLoader(dataset=test_set, batch_size=BATCH_SIZE, num_workers=8)
+    test_set = TemporalColorConstancy(mode="test", data_folder=data_folder)
+    test_loader = DataLoader(dataset=test_set, batch_size=1, num_workers=8)
 
     training_set_size, test_set_size = len(training_set), len(test_set)
     print("Training set size: ... {}".format(training_set_size))
     print("Test set size: ....... {}\n".format(test_set_size))
 
-    model = ModelTCCNet(USE_SHOT_BRANCH)
+    model = ModelTCCNet(use_shot_branch)
 
     if RELOAD_CHECKPOINT:
         print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
@@ -54,14 +60,14 @@ def main():
     model.print_network()
     model.log_network(path_to_log)
 
-    model.set_optimizer(learning_rate=LEARNING_RATE)
+    model.set_optimizer(learning_rate=learning_rate)
 
     print('\n Training starts... \n')
 
     best_val_loss, best_metrics = 100.0, evaluator.get_best_metrics()
     train_loss, val_loss = LossTracker(), LossTracker()
 
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
 
         model.train_mode()
         train_loss.reset()
@@ -131,4 +137,20 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_folder', type=str, default=DATA_FOLDER)
+    parser.add_argument('--epochs', type=int, default=EPOCHS)
+    parser.add_argument('--lr', type=float, default=LEARNING_RATE)
+    parser.add_argument('--use_shot_branch', type=bool, default=USE_SHOT_BRANCH)
+    parser.add_argument('--random_seed', type=int, default=RANDOM_SEED)
+    opt = parser.parse_args()
+
+    print("\n *** Training configuration ***")
+    print("\t Data folder ....... : {}".format(opt.data_folder))
+    print("\t Epochs ............ : {}".format(opt.epochs))
+    print("\t Learning rate ..... : {}".format(opt.lr))
+    print("\t Use shot branch ... : {}".format(opt.use_shot_branch))
+    print("\t Random seed ....... : {}".format(opt.random_seed))
+
+    make_deterministic(opt.random_seed)
+    main(opt)
