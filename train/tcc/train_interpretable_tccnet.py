@@ -97,7 +97,6 @@ def main(opt):
             if i % 5 == 0:
                 print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
                       .format(epoch + 1, epochs, i + 1, training_set_size, loss))
-                break
 
         train_time = time.time() - start
         log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
@@ -126,7 +125,6 @@ def main(opt):
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
                               .format(epoch + 1, EPOCHS, i + 1, test_set_size, loss))
-                        break
 
             print("\n--------------------------------------------------------------\n")
 
@@ -152,7 +150,6 @@ def main(opt):
             model.save(os.path.join(path_to_log, "model.pth"))
 
         log_metrics(train_loss.avg, val_loss.avg, metrics, best_metrics, path_to_metrics_log)
-        exit()
 
 
 if __name__ == '__main__':
