@@ -9,7 +9,7 @@ class GrayBall(BaseTemporalDataset):
 
     def __init__(self, mode: str = "train", input_size: Tuple = (224, 224), fold: int = 0, num_folds: int = 3):
         super().__init__(mode, input_size)
-        path_to_dataset = os.path.join("dataset", "grayball", "preprocessed")
+        path_to_dataset = os.path.join(self._path_to_dataset, "grayball", "preprocessed")
         training_scenes = sorted(os.listdir(path_to_dataset))
 
         fold_size = len(training_scenes) // num_folds

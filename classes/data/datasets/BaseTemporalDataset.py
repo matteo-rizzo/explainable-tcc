@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
+from auxiliary.settings import PATH_TO_DATASET
 from auxiliary.utils import hwc_chw, gamma_correct, brg_to_rgb
 from classes.data.DataAugmenter import DataAugmenter
 
@@ -14,6 +15,7 @@ class BaseTemporalDataset(data.Dataset):
         self.__input_size = input_size
         self.__da = DataAugmenter(input_size)
         self._mode = mode
+        self._path_to_dataset = PATH_TO_DATASET
         self._data_dir, self._label_dir = "ndata_seq", "nlabel"
         self._paths_to_items = []
 

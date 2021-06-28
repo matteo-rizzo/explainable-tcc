@@ -3,7 +3,7 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 
-from classes.modules.common.conv_lstm.ConvLSTMCell import ConvLSTMCell
+from submodules.conv_lstm.ConvLSTMCell import ConvLSTMCell
 
 """
 A multi-layer convolutional LSTM module based on: https://arxiv.org/abs/1506.04214,
@@ -25,7 +25,7 @@ class ConvLSTM(nn.Module):
 
         self.input_channels = [input_channels] + hidden_channels
         self.hidden_channels = hidden_channels
-        self.kernel_size = kernel_size
+        self._kernel_size = kernel_size
         self.num_layers = len(hidden_channels)
         self.step = step
         self.effective_steps = effective_steps
@@ -33,7 +33,7 @@ class ConvLSTM(nn.Module):
 
         for i in range(self.num_layers):
             name = 'cell{}'.format(i)
-            cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self.kernel_size)
+            cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self._kernel_size)
             setattr(self, name, cell)
             self._all_layers.append(cell)
 

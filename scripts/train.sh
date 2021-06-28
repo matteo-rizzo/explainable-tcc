@@ -16,10 +16,12 @@ source venv/bin/activate
 #export PYTHONPATH=$PYTHONPATH:~/projects/def-conati/marizzo/xai/interpretable-tcc
 export PYTHONPATH=$PYTHONPATH:~/home/matteo/Projects/interpretable-tcc
 
-python3 train/tcc/train_tccnet.py --data_folder "tcc_split" || exit
-python3 train/tcc/train_tccnet.py --data_folder "fold_0" || exit
-python3 train/tcc/train_tccnet.py --data_folder "fold_1" || exit
-python3 train/tcc/train_tccnet.py --data_folder "fold_2" || exit
-#python3 train/tcc/train_interpretable_tccnet.py --model_type "att_tccnet" || exit
-#python3 train/tcc/train_interpretable_tccnet.py --model_type "conf_tccnet" || exit
-#python3 train/tcc/train_interpretable_tccnet.py --model_type "conf_att_tccnet" || exit
+declare -a models=("att_tccnet" "conf_tccnet" "conf_att_tccnet")
+#declare -a data_folders=("tcc_split" "fold_0" "fold_1" "fold_2")
+declare -a data_folders=("tcc_split")
+
+for model in "${models[@]}"; do
+  for data_folder in "${data_folders[@]}"; do
+    python3 train/tcc/train_interpretable_tccnet.py --data_folder "$data_folder" --model_type "$model" || exit
+  done
+done

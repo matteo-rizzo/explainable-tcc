@@ -35,5 +35,11 @@ def make_deterministic(random_seed: int = 0):
     torch.backends.cudnn.benchmark = False
 
 
+# --- Visualization ---
+
 # The ids of the sequences to be monitored at training time (e.g., ["0", "1", "2"])
 TEST_VIS_IMG = []
+
+# --- Dataset ---
+
+PATH_TO_DATASET = "/media/matteo/Extreme SSD/dataset/ccc/"
