@@ -2,10 +2,10 @@ import glob
 import os
 from typing import Tuple
 
-from classes.data.datasets.BaseTemporalDataset import BaseTemporalDataset
+from classes.data.datasets.TemporalDataset import TemporalDataset
 
 
-class TemporalColorConstancy(BaseTemporalDataset):
+class TCC(TemporalDataset):
 
     def __init__(self, mode: str = "train", input_size: Tuple = (224, 224), data_folder: str = "tcc_split"):
         super().__init__(mode, input_size)

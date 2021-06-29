@@ -7,7 +7,7 @@ from auxiliary.settings import DEVICE
 from classes.modules.submodules.conv_lstm.ConvLSTMCell import ConvLSTMCell
 
 
-class BaseTCCNet(nn.Module):
+class TCCNet(nn.Module):
 
     def __init__(self, rnn_input_size: int = 3, hidden_size: int = 128, kernel_size: int = 3, deactivate: str = None):
         super().__init__()

@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.nn.functional import normalize
 
-from classes.modules.core.BaseTCCNet import BaseTCCNet
+from classes.modules.core.TCCNet import TCCNet
 from classes.modules.submodules.attention.SpatialAttention import SpatialAttention
 from classes.modules.submodules.attention.TemporalAttention import TemporalAttention
 from classes.modules.submodules.squeezenet.SqueezeNetLoader import SqueezeNetLoader
@@ -12,7 +12,7 @@ from classes.modules.submodules.squeezenet.SqueezeNetLoader import SqueezeNetLoa
 """ Spatial attention + Temporal attention """
 
 
-class AttTCCNet(BaseTCCNet):
+class AttTCCNet(TCCNet):
 
     def __init__(self, hidden_size: int = 128, kernel_size: int = 5, deactivate: str = None):
         super().__init__(rnn_input_size=512, hidden_size=hidden_size, kernel_size=kernel_size, deactivate=deactivate)

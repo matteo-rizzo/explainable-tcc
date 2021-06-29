@@ -1,10 +1,10 @@
 import torch
 
-from classes.modules.core.BaseModel import BaseModel
+from classes.modules.core.Model import Model
 from classes.modules.multiframe.tccnet.TCCNet import TCCNet
 
 
-class ModelTCCNet(BaseModel):
+class ModelTCCNet(Model):
 
     def __init__(self, use_shot_branch: bool):
         super().__init__()

@@ -2,10 +2,10 @@ import glob
 import os
 from typing import Tuple, List
 
-from classes.data.datasets.BaseTemporalDataset import BaseTemporalDataset
+from classes.data.datasets.TemporalDataset import TemporalDataset
 
 
-class GrayBall(BaseTemporalDataset):
+class GrayBall(TemporalDataset):
 
     def __init__(self, mode: str = "train", input_size: Tuple = (224, 224), fold: int = 0, num_folds: int = 3):
         super().__init__(mode, input_size)

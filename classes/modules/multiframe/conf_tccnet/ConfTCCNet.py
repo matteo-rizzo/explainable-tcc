@@ -5,13 +5,13 @@ import torch.nn.functional as F
 from torch.nn.functional import normalize
 
 from auxiliary.utils import scale
-from classes.modules.core.BaseTCCNet import BaseTCCNet
+from classes.modules.core.TCCNet import TCCNet
 from classes.modules.singleframe.FC4 import FC4
 
 """ Confidence as spatial attention + Confidence as temporal attention """
 
 
-class ConfTCCNet(BaseTCCNet):
+class ConfTCCNet(TCCNet):
 
     def __init__(self, hidden_size: int = 128, kernel_size: int = 5, deactivate: str = None):
         super().__init__(rnn_input_size=3, hidden_size=hidden_size, kernel_size=kernel_size, deactivate=deactivate)

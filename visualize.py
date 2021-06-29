@@ -9,7 +9,7 @@ from torchvision.transforms import transforms
 
 from auxiliary.settings import DEVICE
 from auxiliary.utils import correct, rescale, scale
-from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.data.datasets.TCC import TCC
 from multiframe.conf_tccnet.ModelConfTCCNet import ModelSTAttTCCNet
 from classes.training.Evaluator import Evaluator
 
@@ -29,7 +29,7 @@ MODELS = {"sta_tccnet": ModelSTAttTCCNet}
 
 
 def main():
-    test_set = TemporalColorConstancy(mode="test", data_folder=DATA_FOLDER)
+    test_set = TCC(mode="test", data_folder=DATA_FOLDER)
     test_loader = DataLoader(test_set, batch_size=1, shuffle=False, num_workers=20)
     print('Test set size: {}'.format(len(test_set)))
 

@@ -12,7 +12,7 @@ from auxiliary.settings import DEVICE
 from auxiliary.utils import correct, rescale, scale
 
 
-class BaseModel:
+class Model:
 
     def __init__(self):
         self._device = DEVICE

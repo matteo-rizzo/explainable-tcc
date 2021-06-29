@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from auxiliary.settings import DEVICE, make_deterministic
 from auxiliary.utils import log_experiment, log_metrics, print_val_metrics, log_time
-from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.data.datasets.TCC import TCC
 from classes.modules.multiframe.tccnet.ModelTCCNet import ModelTCCNet
 from classes.training.Evaluator import Evaluator
 from classes.training.LossTracker import LossTracker
@@ -41,10 +41,10 @@ def main(opt):
 
     print("\nLoading data from '{}':".format(data_folder))
 
-    training_set = TemporalColorConstancy(mode="train", data_folder=data_folder)
+    training_set = TCC(mode="train", data_folder=data_folder)
     train_loader = DataLoader(dataset=training_set, batch_size=1, shuffle=True, num_workers=8)
 
-    test_set = TemporalColorConstancy(mode="test", data_folder=data_folder)
+    test_set = TCC(mode="test", data_folder=data_folder)
     test_loader = DataLoader(dataset=test_set, batch_size=1, num_workers=8)
 
     training_set_size, test_set_size = len(training_set), len(test_set)

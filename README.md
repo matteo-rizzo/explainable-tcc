@@ -90,7 +90,7 @@ C-TCCNet-C4) and `singleframe` (i.e., [C4](https://github.com/yhlscut/C4) and [F
 .
 
 Each module at `classes/modules` features a **network** (i.e., a subclass of `nn.Module`) and a **model** (i.e., a
-subclass of the custom `classes/modules/common/BaseModel.py` handling the prediction step). Note that each
+subclass of the custom `classes/modules/common/Model.py` handling the prediction step). Note that each
 model *[has a](https://en.wikipedia.org/wiki/Has-a)* network and acts as interface towards it for training and
 inference, handling the weights update and the loss computation.
 

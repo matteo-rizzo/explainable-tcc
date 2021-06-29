@@ -79,6 +79,7 @@ def print_test_metrics(metrics: Union[Dict, Tuple]):
         print(" Worst 5% ........ : [ s1: {:.4f} | s2: {:.4f} | s3: {:.4f} ] \n"
               .format(metrics1["wst5"], metrics2["wst5"], metrics3["wst5"]))
 
+
 def correct(img: np.ndarray, illuminant: torch.Tensor) -> Image:
     """
     Corrects the color of the illuminant of a linear image based on an estimated (linear) illuminant

@@ -9,7 +9,7 @@ from auxiliary.utils import hwc_chw, gamma_correct, brg_to_rgb
 from classes.data.DataAugmenter import DataAugmenter
 
 
-class BaseTemporalDataset(data.Dataset):
+class TemporalDataset(data.Dataset):
 
     def __init__(self, mode, input_size):
         self.__input_size = input_size

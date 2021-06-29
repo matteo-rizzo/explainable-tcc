@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from auxiliary.settings import DEVICE, make_deterministic
 from auxiliary.utils import log_experiment, log_metrics, log_time, print_val_metrics
-from classes.data.datasets.TemporalColorConstancy import TemporalColorConstancy
+from classes.data.datasets.TCC import TCC
 from classes.modules.multiframe.att_tccnet.ModelAttTCCNet import ModelAttTCCNet
 from classes.modules.multiframe.conf_att_tccnet.ModelConfAttTCCNet import ModelConfAttTCCNet
 from classes.modules.multiframe.conf_tccnet.ModelConfTCCNet import ModelConfTCCNet
@@ -22,16 +22,13 @@ LEARNING_RATE = 0.00003
 HIDDEN_SIZE = 128
 KERNEL_SIZE = 5
 
-# Which type of model to train
-# Values: keys in the "MODELS" dictionary
+# Which type of model to train - Values: keys in the "MODELS" dictionary
 MODEL_TYPE = "att_tccnet"
 
-# Which dataset slit to use
-# Values (TCC): "tcc_split", "fold_0", "fold_1", "fold_2"
+# Which dataset slit to use - Values (TCC): "tcc_split", "fold_0", "fold_1", "fold_2"
 DATA_FOLDER = "tcc_split"
 
-# Which attention/confidence module should be deactivated
-# Values: "spatial", "temporal", None
+# Which attention/confidence module should be deactivated - Values: "spatial", "temporal", None
 DEACTIVATE = "temporal"
 
 RELOAD_CHECKPOINT = False
@@ -56,10 +53,10 @@ def main(opt):
 
     print("\nLoading data from '{}':".format(data_folder))
 
-    training_set = TemporalColorConstancy(mode="train", data_folder=data_folder)
+    training_set = TCC(mode="train", data_folder=data_folder)
     train_loader = DataLoader(dataset=training_set, batch_size=1, shuffle=True, num_workers=8)
 
-    test_set = TemporalColorConstancy(mode="test", data_folder=data_folder)
+    test_set = TCC(mode="test", data_folder=data_folder)
     test_loader = DataLoader(dataset=test_set, batch_size=1, num_workers=8)
 
     training_set_size, test_set_size = len(training_set), len(test_set)

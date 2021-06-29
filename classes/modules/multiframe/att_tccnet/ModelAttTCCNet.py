@@ -3,11 +3,11 @@ from typing import Union
 
 from torch import Tensor
 
-from classes.modules.core.BaseModel import BaseModel
+from classes.modules.core.Model import Model
 from classes.modules.multiframe.att_tccnet.AttTCCNet import AttTCCNet
 
 
-class ModelAttTCCNet(BaseModel):
+class ModelAttTCCNet(Model):
 
     def __init__(self, hidden_size: int, kernel_size: int, deactivate: bool):
         super().__init__()
