@@ -9,8 +9,8 @@ from auxiliary.settings import DEVICE, make_deterministic
 from auxiliary.utils import log_experiment, log_metrics, print_val_metrics, log_time
 from classes.data.datasets.TCC import TCC
 from classes.modules.multiframe.tccnet.ModelTCCNet import ModelTCCNet
-from classes.training.Evaluator import Evaluator
-from classes.training.LossTracker import LossTracker
+from core.Evaluator import Evaluator
+from core.LossTracker import LossTracker
 
 DATA_FOLDER = "tcc_split"
 USE_SHOT_BRANCH = False

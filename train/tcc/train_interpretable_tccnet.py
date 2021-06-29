@@ -7,12 +7,12 @@ from torch.utils.data import DataLoader
 
 from auxiliary.settings import DEVICE, make_deterministic
 from auxiliary.utils import log_experiment, log_metrics, log_time, print_val_metrics
+from classes.core.Evaluator import Evaluator
+from classes.core.LossTracker import LossTracker
 from classes.data.datasets.TCC import TCC
 from classes.modules.multiframe.att_tccnet.ModelAttTCCNet import ModelAttTCCNet
 from classes.modules.multiframe.conf_att_tccnet.ModelConfAttTCCNet import ModelConfAttTCCNet
 from classes.modules.multiframe.conf_tccnet.ModelConfTCCNet import ModelConfTCCNet
-from classes.training.Evaluator import Evaluator
-from classes.training.LossTracker import LossTracker
 
 # ----------------------------------------------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ MODEL_TYPE = "att_tccnet"
 DATA_FOLDER = "tcc_split"
 
 # Which attention/confidence module should be deactivated - Values: "spatial", "temporal", None
-DEACTIVATE = "temporal"
+DEACTIVATE = None
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
@@ -94,6 +94,7 @@ def main(opt):
             if i % 5 == 0:
                 print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
                       .format(epoch + 1, epochs, i + 1, training_set_size, loss))
+                break
 
         train_time = time.time() - start
         log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
@@ -115,13 +116,14 @@ def main(opt):
                 for i, (x, m, y, file_name) in enumerate(test_loader):
                     x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
                     pred = model.predict(x, m)
-                    loss = model.get_loss(pred, y)
+                    loss = model.get_loss(pred, y).item()
                     val_loss.update(loss)
                     evaluator.add_error(loss)
 
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
                               .format(epoch + 1, EPOCHS, i + 1, test_set_size, loss))
+                        break
 
             print("\n--------------------------------------------------------------\n")
 
@@ -147,6 +149,7 @@ def main(opt):
             model.save(os.path.join(path_to_log, "model.pth"))
 
         log_metrics(train_loss.avg, val_loss.avg, metrics, best_metrics, path_to_metrics_log)
+        exit()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import torch
 
-from classes.modules.core.Model import Model
+from core.Model import Model
 from classes.modules.multiframe.tccnet.TCCNet import TCCNet
 
 
