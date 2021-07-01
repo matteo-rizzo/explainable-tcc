@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 /train/tcc/logs/
+/test/att/
+/test/pred/

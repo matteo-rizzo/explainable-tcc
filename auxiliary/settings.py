@@ -1,3 +1,4 @@
+import os
 import re
 
 import numpy as np
@@ -42,4 +43,4 @@ TEST_VIS_IMG = []
 
 # --- Dataset ---
 
-PATH_TO_DATASET = "/media/matteo/Extreme SSD/dataset/ccc/"
+PATH_TO_DATASET = os.path.join("/media", "matteo", "Extreme SSD", "dataset", "ccc")

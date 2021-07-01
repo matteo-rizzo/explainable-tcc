@@ -17,10 +17,6 @@ from classes.modules.multiframe.conf_tccnet.ModelConfTCCNet import ModelConfTCCN
 # ----------------------------------------------------------------------------------------------------------------
 
 RANDOM_SEED = 0
-EPOCHS = 2000
-LEARNING_RATE = 0.00003
-HIDDEN_SIZE = 128
-KERNEL_SIZE = 5
 
 # Which type of model to train - Values: keys in the "MODELS" dictionary
 MODEL_TYPE = "att_tccnet"
@@ -28,11 +24,19 @@ MODEL_TYPE = "att_tccnet"
 # Which dataset slit to use - Values (TCC): "tcc_split", "fold_0", "fold_1", "fold_2"
 DATA_FOLDER = "tcc_split"
 
-# Which attention/confidence module should be deactivated - Values: "spatial", "temporal", None
-DEACTIVATE = None
+# Which attention/confidence module should be deactivated - Values: "spatial", "temporal", empty string
+DEACTIVATE = ""
+
+HIDDEN_SIZE = 128
+KERNEL_SIZE = 5
+
+EPOCHS = 2000
+LEARNING_RATE = 0.00003
 
 RELOAD_CHECKPOINT = False
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
+
+# ----------------------------------------------------------------------------------------------------------------
 
 MODELS = {"att_tccnet": ModelAttTCCNet, "conf_tccnet": ModelConfTCCNet, "conf_att_tccnet": ModelConfAttTCCNet}
 
@@ -86,7 +90,7 @@ def main(opt):
         train_loss.reset()
         start = time.time()
 
-        for i, (x, m, y, file_name) in enumerate(train_loader):
+        for i, (x, m, y, _) in enumerate(train_loader):
             x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
             loss = model.optimize(x, y, m)
             train_loss.update(loss)
@@ -94,7 +98,6 @@ def main(opt):
             if i % 5 == 0:
                 print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
                       .format(epoch + 1, epochs, i + 1, training_set_size, loss))
-                break
 
         train_time = time.time() - start
         log_time(time=train_time, time_type="train", path_to_log=path_to_experiment_log)
@@ -113,7 +116,7 @@ def main(opt):
                 model.evaluation_mode()
                 evaluator.reset_errors()
 
-                for i, (x, m, y, file_name) in enumerate(test_loader):
+                for i, (x, m, y, _) in enumerate(test_loader):
                     x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
                     pred = model.predict(x, m)
                     loss = model.get_loss(pred, y).item()
@@ -123,7 +126,6 @@ def main(opt):
                     if i % 5 == 0:
                         print("[ Epoch: {}/{} - Batch: {}/{}] | Val loss: {:.4f} ]"
                               .format(epoch + 1, EPOCHS, i + 1, test_set_size, loss))
-                        break
 
             print("\n--------------------------------------------------------------\n")
 
@@ -149,7 +151,6 @@ def main(opt):
             model.save(os.path.join(path_to_log, "model.pth"))
 
         log_metrics(train_loss.avg, val_loss.avg, metrics, best_metrics, path_to_metrics_log)
-        exit()
 
 
 if __name__ == '__main__':

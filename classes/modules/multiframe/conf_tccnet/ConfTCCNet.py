@@ -16,7 +16,7 @@ class ConfTCCNet(TCCNet):
     def __init__(self, hidden_size: int = 128, kernel_size: int = 5, deactivate: str = None):
         super().__init__(rnn_input_size=3, hidden_size=hidden_size, kernel_size=kernel_size, deactivate=deactivate)
 
-        # Confidences as spatial and temporal attention
+        # Confidence as spatial and temporal attention
         self.fcn = FC4()
 
     def weight_spat(self, x: torch.Tensor, conf: torch.Tensor) -> torch.Tensor:

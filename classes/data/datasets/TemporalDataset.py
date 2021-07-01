@@ -23,12 +23,12 @@ class TemporalDataset(data.Dataset):
         path_to_sequence = self._paths_to_items[index]
         label_path = path_to_sequence.replace(self._data_dir, self._label_dir)
 
-        x = np.array(np.load(path_to_sequence), dtype='float32')
-        illuminant = np.array(np.load(label_path), dtype='float32')
+        x = np.array(np.load(path_to_sequence), dtype="float32")
+        y = np.array(np.load(label_path), dtype="float32")
         m = torch.from_numpy(self.__da.augment_mimic(x).transpose((0, 3, 1, 2)).copy())
 
         if self._mode == "train":
-            x, color_bias = self.__da.augment_sequence(x, illuminant)
+            x, color_bias = self.__da.augment_sequence(x, y)
             color_bias = np.array([[[color_bias[0][0], color_bias[1][1], color_bias[2][2]]]], dtype=np.float32)
             m = torch.mul(m, torch.from_numpy(color_bias).view(1, 3, 1, 1))
         else:
@@ -38,9 +38,9 @@ class TemporalDataset(data.Dataset):
         x = hwc_chw(gamma_correct(brg_to_rgb(x)))
 
         x = torch.from_numpy(x.copy())
-        illuminant = torch.from_numpy(illuminant.copy())
+        y = torch.from_numpy(y.copy())
 
-        return x, m, illuminant, path_to_sequence
+        return x, m, y, path_to_sequence
 
     def __len__(self) -> int:
         return len(self._paths_to_items)

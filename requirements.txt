@@ -1,8 +1,8 @@
+numpy
+torch
 opencv-python
 scikit-image
 scipy
-numpy
-torch
 matplotlib
 pandas
 scikit-learn
