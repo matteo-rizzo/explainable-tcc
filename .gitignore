@@ -131,3 +131,4 @@ dmypy.json
 /train/tcc/logs/
 /test/att/
 /test/pred/
+/test/logs/
