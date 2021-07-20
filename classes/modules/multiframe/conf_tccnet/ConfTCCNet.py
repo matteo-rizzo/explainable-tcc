@@ -20,13 +20,13 @@ class ConfTCCNet(TCCNet):
         self.fcn = FC4()
 
     def weight_spat(self, x: torch.Tensor, conf: torch.Tensor) -> torch.Tensor:
-        return scale(x if self._deactivate == "spatial" else (x * conf)).clone()
+        return scale(x if self._deactivate == "spat" else (x * conf)).clone()
 
     def weight_temp(self, x: torch.Tensor, conf: torch.Tensor) -> Tuple:
-        if self._deactivate == "temporal":
-            return x, None
-        temp_conf = F.softmax(torch.mean(torch.mean(conf.squeeze(1), dim=1), dim=1), dim=0)
-        temp_weighted_x = x * temp_conf.unsqueeze(1).unsqueeze(2).unsqueeze(3)
+        if self._deactivate == "temp":
+            return x, torch.Tensor()
+        temp_conf = F.softmax(torch.mean(torch.mean(conf.squeeze(1), dim=1), dim=1), dim=0).unsqueeze(1)
+        temp_weighted_x = x * temp_conf.unsqueeze(2).unsqueeze(3)
         return temp_weighted_x, temp_conf
 
     def forward(self, x: torch.Tensor) -> Tuple:

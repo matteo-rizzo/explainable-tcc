@@ -24,13 +24,13 @@ MODEL_TYPE = "att_tccnet"
 # Which dataset slit to use - Values (TCC): "tcc_split", "fold_0", "fold_1", "fold_2"
 DATA_FOLDER = "tcc_split"
 
-# Which attention/confidence module should be deactivated - Values: "spatial", "temporal", empty string
+# Which attention/confidence module should be deactivated - Values: "spat", "temp", empty string
 DEACTIVATE = ""
 
 HIDDEN_SIZE = 128
 KERNEL_SIZE = 5
 
-EPOCHS = 2000
+EPOCHS = 1000
 LEARNING_RATE = 0.00003
 
 RELOAD_CHECKPOINT = False
@@ -46,6 +46,7 @@ MODELS = {"att_tccnet": ModelAttTCCNet, "conf_tccnet": ModelConfTCCNet, "conf_at
 def main(opt):
     model_type, hidden_size, kernel_size, deactivate = opt.model_type, opt.hidden_size, opt.kernel_size, opt.deactivate
     data_folder, epochs, learning_rate = opt.data_folder, opt.epochs, opt.lr
+    reload_ckpt, path_to_ckpt = opt.reload_ckpt, opt.path_to_ckpt
     evaluator = Evaluator()
 
     path_to_log = os.path.join("train", "tcc", "logs", "", "{}_{}_{}".format(model_type, data_folder, + time.time()))
@@ -69,9 +70,9 @@ def main(opt):
 
     model = MODELS[model_type](hidden_size, kernel_size, deactivate)
 
-    if RELOAD_CHECKPOINT:
-        print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(PATH_TO_PTH_CHECKPOINT))
-        model.load(PATH_TO_PTH_CHECKPOINT)
+    if reload_ckpt:
+        print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(path_to_ckpt))
+        model.load(path_to_ckpt)
 
     model.print_network()
     model.log_network(path_to_log)
@@ -155,15 +156,19 @@ def main(opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--random_seed', type=int, default=RANDOM_SEED)
     parser.add_argument("--model_type", type=str, default=MODEL_TYPE)
     parser.add_argument('--data_folder', type=str, default=DATA_FOLDER)
     parser.add_argument('--epochs', type=int, default=EPOCHS)
     parser.add_argument('--lr', type=float, default=LEARNING_RATE)
-    parser.add_argument('--random_seed', type=int, default=RANDOM_SEED)
     parser.add_argument('--hidden_size', type=int, default=HIDDEN_SIZE)
     parser.add_argument('--kernel_size', type=int, default=KERNEL_SIZE)
     parser.add_argument('--deactivate', type=str, default=DEACTIVATE)
+    parser.add_argument('--reload_ckpt', action="store_true")
     opt = parser.parse_args()
+
+    opt.path_to_ckpt = os.path.join("trained_models", "no_{}".format(opt.deactivate),
+                                    opt.model_type, opt.data_folder, "model.pth")
 
     print("\n *** Training configuration ***")
     print("\t Model type ...... : {}".format(opt.model_type))

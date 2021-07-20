@@ -21,26 +21,27 @@ class AttTCCNet(TCCNet):
         self.backbone = nn.Sequential(*list(SqueezeNetLoader().load(pretrained=True).children())[0][:12])
 
         # Spatial attention
-        if self._deactivate != "spatial":
+        if self._deactivate != "spat":
             self.spat_att = SpatialAttention(input_size=512)
 
         # Temporal attention
-        if self._deactivate != "temporal":
+        if self._deactivate != "temp":
             self.temp_att = TemporalAttention(features_size=512, hidden_size=hidden_size)
 
     def weight_spat(self, x: torch.Tensor) -> Tuple:
-        if self._deactivate == "spatial":
-            return x, None
+        if self._deactivate == "spat":
+            return x, torch.Tensor()
         spat_weights = self.spat_att(x)
         spat_weighted_x = (x * spat_weights).clone()
         return spat_weighted_x, spat_weights
 
     def weight_temp(self, x: torch.Tensor, hidden: torch.Tensor, t: int, time_steps: int) -> Tuple:
-        if self._deactivate == "temporal":
-            return x[t, :, :, :], None
+        if self._deactivate == "temp":
+            return x[t, :, :, :], torch.Tensor()
         temp_weights = self.temp_att(x, hidden)
+        # Possible bug
         temp_weighted_x = torch.div(torch.sum(x * temp_weights, dim=0), time_steps)
-        return temp_weighted_x, temp_weights
+        return temp_weighted_x, temp_weights.squeeze()
 
     def forward(self, x: torch.Tensor) -> Tuple:
         """
@@ -65,7 +66,7 @@ class AttTCCNet(TCCNet):
         for t in range(time_steps):
             # Temporal attention
             temp_weighted_x, temp_weights = self.weight_temp(spat_weighted_x, hidden, t, time_steps)
-            temp_mask.append(temp_weights.squeeze())
+            temp_mask.append(temp_weights)
 
             hidden, cell = self.conv_lstm(temp_weighted_x.unsqueeze(0), hidden, cell)
             hidden_states.append(hidden)

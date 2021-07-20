@@ -17,26 +17,26 @@ class ConfAttTCCNet(TCCNet):
         super().__init__(rnn_input_size=3, hidden_size=hidden_size, kernel_size=kernel_size, deactivate=deactivate)
 
         # Confidence as spatial attention
-        self.fcn = FC4(use_cwp=self._deactivate != "spatial")
+        self.fcn = FC4(use_cwp=self._deactivate != "spat")
 
         # Temporal attention
-        if self._deactivate != "temporal":
+        if self._deactivate != "temp":
             self.temp_att = TemporalAttention(features_size=3, hidden_size=hidden_size)
 
     def weight_spat(self, x: torch.Tensor) -> Tuple:
-        if self._deactivate == "spatial":
+        if self._deactivate == "spat":
             _, out = self.fcn(x)
-            return out, None
+            return out, torch.Tensor()
         _, rgb, spat_conf = self.fcn(x)
         spat_weighted_x = scale(rgb * spat_conf).clone()
         return spat_weighted_x, spat_conf
 
     def weight_temp(self, x: torch.Tensor, hidden: torch.Tensor, t: int, time_steps: int) -> Tuple:
-        if self._deactivate == "temporal":
-            return x[t, :, :, :], None
+        if self._deactivate == "temp":
+            return x[t, :, :, :], torch.Tensor()
         temp_weights = self.temp_att(x, hidden)
         temp_weighted_x = torch.div(torch.sum(x * temp_weights, dim=0), time_steps)
-        return temp_weighted_x, temp_weights
+        return temp_weighted_x, temp_weights.squeeze()
 
     def forward(self, x: torch.Tensor) -> Tuple:
         batch_size, time_steps, num_channels, h, w = x.shape
@@ -54,7 +54,7 @@ class ConfAttTCCNet(TCCNet):
         for t in range(time_steps):
             # Temporal attention
             temp_weighted_x, temp_weights = self.weight_temp(spat_weighted_x, hidden, t, time_steps)
-            temp_mask.append(temp_weights.squeeze())
+            temp_mask.append(temp_weights)
 
             hidden, cell = self.conv_lstm(temp_weighted_x.unsqueeze(0), hidden, cell)
             hidden_states.append(hidden)

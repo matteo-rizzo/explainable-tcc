@@ -21,7 +21,7 @@ RANDOM_SEED = 0
 
 MODEL_TYPE = "att_tccnet"
 DATA_FOLDER = "tcc_split"
-PATH_TO_PTH = os.path.join("trained_models", "full_seq", "spatiotemporal")
+PATH_TO_PTH = os.path.join("trained_models", "full_seq")
 
 HIDDEN_SIZE = 128
 KERNEL_SIZE = 5
@@ -29,7 +29,6 @@ DEACTIVATE = ""
 
 SAVE_PRED = True
 SAVE_ATT = True
-USE_TRAINING_SET = False
 
 # ----------------------------------------------------------------------------------------------------------------
 
@@ -41,27 +40,28 @@ MODELS = {"att_tccnet": ModelAttTCCNet, "conf_tccnet": ModelConfTCCNet, "conf_at
 def main(opt):
     model_type, data_folder, path_to_pth = opt.model_type, opt.data_folder, opt.path_to_pth
     hidden_size, kernel_size, deactivate = opt.hidden_size, opt.kernel_size, opt.deactivate
-    save_pred, save_att, use_training_set = opt.save_pred, opt.save_att, opt.use_training_set
+    save_pred, save_att, use_train_set = opt.save_pred, opt.save_att, opt.use_train_set
 
     path_to_pred, path_to_spat_att, path_to_temp_att = None, None, None
+    base_dir = "{}_no_{}_{}_{}".format(model_type, deactivate, data_folder, time())
 
     if save_pred:
-        path_to_pred = os.path.join("test", "logs", "{}_{}_{}_pred".format(model_type, data_folder, time()))
+        path_to_pred = os.path.join("test", "logs", "{}_pred".format(base_dir))
         print("\n Saving predictions at {}".format(path_to_pred))
         os.makedirs(path_to_pred)
 
     if save_att:
-        path_to_att = os.path.join("test", "logs", "{}_{}_{}_att".format(model_type, data_folder, time()))
+        path_to_att = os.path.join("test", "logs", "{}_att".format(base_dir))
         print("\n Saving attention weights at {}".format(path_to_att))
 
-        path_to_spat_att = os.path.join(path_to_att, "spatial")
+        path_to_spat_att = os.path.join(path_to_att, "spat")
         os.makedirs(path_to_spat_att)
 
-        path_to_temp_att = os.path.join(path_to_att, "temporal")
+        path_to_temp_att = os.path.join(path_to_att, "temp")
         os.makedirs(path_to_temp_att)
 
     print("\n Loading data from '{}':".format(data_folder))
-    dataset = TCC(mode="train" if use_training_set else "test", data_folder=data_folder)
+    dataset = TCC(mode="train" if use_train_set else "test", data_folder=data_folder)
     dataloader = DataLoader(dataset=dataset, batch_size=1, num_workers=8)
     dataset_size = len(dataset)
     print("\n -> Data loaded! Dataset size is {}".format(dataset_size))
@@ -121,11 +121,18 @@ if __name__ == '__main__':
     parser.add_argument('--deactivate', type=str, default=DEACTIVATE)
     parser.add_argument('--save_pred', type=bool, default=SAVE_PRED)
     parser.add_argument('--save_att', type=bool, default=SAVE_ATT)
-    parser.add_argument('--use_training_set', type=bool, default=USE_TRAINING_SET)
+    parser.add_argument('--use_train_set', action="store_true")
     parser.add_argument('--path_to_pth', type=str, default=PATH_TO_PTH)
     opt = parser.parse_args()
 
-    opt.path_to_pth = os.path.join(opt.path_to_pth, opt.model_type, opt.data_folder)
+    if opt.deactivate == "temp":
+        sal_type = "spat"
+    elif opt.deactivate == "spat":
+        sal_type = "temp"
+    else:
+        sal_type = "spatiotemp"
+
+    opt.path_to_pth = os.path.join(opt.path_to_pth, sal_type, opt.model_type, opt.data_folder)
 
     print("\n *** Test configuration ***")
     print("\t Model type ......... : {}".format(opt.model_type))
@@ -136,7 +143,7 @@ if __name__ == '__main__':
     print("\t Deactivate ......... : {}".format(opt.deactivate))
     print("\t Save predictions ... : {}".format(opt.save_pred))
     print("\t Save attention ..... : {}".format(opt.save_att))
-    print("\t Use training set ... : {}".format(opt.use_training_set))
+    print("\t Use training set ... : {}".format(opt.use_train_set))
     print("\t Path to PTH ........ : {}".format(opt.path_to_pth))
 
     make_deterministic(opt.random_seed)
