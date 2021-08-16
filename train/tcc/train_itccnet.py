@@ -33,7 +33,7 @@ KERNEL_SIZE = 5
 EPOCHS = 1000
 LEARNING_RATE = 0.00003
 
-RELOAD_CHECKPOINT = False
+RELOAD_CHECKPOINT = True
 PATH_TO_PTH_CHECKPOINT = os.path.join("trained_models", "{}_{}".format(MODEL_TYPE, DATA_FOLDER), "model.pth")
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -91,12 +91,12 @@ def main(opt):
         train_loss.reset()
         start = time.time()
 
-        for i, (x, m, y, _) in enumerate(train_loader):
+        for i, (x, m, y, filename) in enumerate(train_loader):
             x, m, y = x.to(DEVICE), m.to(DEVICE), y.to(DEVICE)
             loss = model.optimize(x, y, m)
             train_loss.update(loss)
 
-            if i % 5 == 0:
+            if i % 1 == 0:
                 print("[ Epoch: {}/{} - Batch: {}/{} ] | [ Train loss: {:.4f} ]"
                       .format(epoch + 1, epochs, i + 1, training_set_size, loss))
 
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--reload_ckpt', action="store_true")
     opt = parser.parse_args()
 
-    opt.path_to_ckpt = os.path.join("trained_models", "no_{}".format(opt.deactivate),
+    opt.path_to_ckpt = os.path.join("trained_models", "spat" if opt.deactivate == "temp" else "temp",
                                     opt.model_type, opt.data_folder, "model.pth")
 
     print("\n *** Training configuration ***")

@@ -133,7 +133,7 @@ def gamma_correct(img: np.ndarray, gamma: float = 2.2) -> np.ndarray:
 def scale(x: torch.Tensor) -> torch.Tensor:
     """ Scales all values of a tensor between 0 and 1 """
     x = x - x.min()
-    x = x - x.max()
+    x = x / x.max()
     return x
 
 
